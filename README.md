@@ -47,6 +47,14 @@
 
 ---
 
+## 🖼️ 示例图
+
+<p align="center">
+  <img src="upload/app.png" alt="BookmarkManager 界面预览" width="640">
+</p>
+
+---
+
 ## ✨ 功能点
 
 - **📂 上传即处理** — 拖拽浏览器导出的 HTML / Chrome JSON 书签文件，自动开始全流程，无需任何手动步骤

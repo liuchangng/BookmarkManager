@@ -75,3 +75,14 @@ plugin.json
 ADR.md
 CONTEXT-glossary.md
 LESSONS.md
+# 工作流状态/设计/任务文档（本地开发用，不推送公开仓库）
+GO.md
+RULES.md
+SYSTEM.md
+STATE.md
+design.md
+tasks.md
+execution-contract.md
+memory-store.md
+progress.md
+docs/PHASE*.md

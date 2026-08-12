@@ -2,6 +2,9 @@
    收藏夹管理工具 Web 版 — Indigo 设计系统
    ═══════════════════════════════════════════ */
 
+/* hidden 属性必须始终优先：否则 display:flex 等规则会覆盖它，导致弹框关不掉 */
+[hidden] { display: none !important; }
+
 :root {
   --indigo-50:  #EEF2FF;
   --indigo-100: #E0E7FF;

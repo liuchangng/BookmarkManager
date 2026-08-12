@@ -71,3 +71,9 @@
 
 ### 全部完成
 - T1 体检分流 → T2 摘要二阶段 → T3 AI 摘要化 → T4 分类扩充 → T5 UI → T6 回归收口，57 项测试全绿，README 与实现一致
+
+### CHANGE-2026-08-12-indigo-palette（配色升级：Indigo 现代科技，已完成 ✅）
+- [x] 浅色主题 styles.qss 整体换色：主色 Blue→Indigo 家族（#3B82F6→#4F46E5、#2563EB→#4338CA、#1D4ED8→#3730A3、#1E40AF→#312E81、#DBEAFE→#E0E7FF、#EFF6FF→#EEF2FF、#93C5FD→#A5B4FC），背景 #F0F2F5→#F4F5FB，表头 #EEF2FF/字 #4338CA，卡片标题 #312E81，进度条渐变 #4F46E5→#6366F1→#8B5CF6
+- [x] 暗色主题 styles_dark.qss 镜像：#60A5FA→#818CF8、#3B82F6→#6366F1、#1E3A5F→#312E81/#3730A3（hover 底），主按钮渐变 #4F46E5→#4338CA，进度条 #6366F1→#818CF8→#A78BFA
+- [x] 对比度修复：hintText 浅色 #94A3B8→#475569（2.56→6.96）、暗色 #64748B→#94A3B8（3.07→6.96），全部 WCAG 4.5+
+- [x] 验证：QSS 双主题解析零警告、MainWindow offscreen 构建 OK、旧色值残留扫描无、pytest 57 passed、六组关键对比度全部达标

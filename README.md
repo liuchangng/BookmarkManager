@@ -11,7 +11,7 @@
 - **🔍 URL 体检分流** 零成本识别本地/内网与失效链接，自动进系统桶（📁 本地/内网、⚠️ 失效链接）
 - **📝 本地摘要** 网页摘要提取（description/H1/高频句，零网络）喂给 AI，大幅降低 token 成本
 - **📊 实时进度** SSE 推送各阶段进度与日志（体检 → 分类 → 抓取 → 摘要 → AI），全程可见
-- **📁 两级分类** 一级大类 × 二级小类由 AI 按内容自动生成（一致性命名），标准 Netscape HTML 输出
+- **📁 两级分类** 一级大类由 AI 从推荐清单（开发技术/工具软件/购物消费等 16 类）选择，二级小类同主题同名；碎片化小类可一键「合并小分类」归入「其他」
 - **🖥️ 单页操作** 上传区 → 进度区 → 结果区纵向一页，审核（改分类/删失效）直接在结果表操作
 - **🌐 代理配置** 页面内配置代理（抓取国外资源 / AI API 均可走代理），支持一键测试连通性
 - **🔒 安全可靠** API Key 加密存储 / 预算上限兜底 / 导出可排除失效与本地书签
@@ -71,6 +71,7 @@ uv run python webapp.py
 | `proxy` | 代理设置（enabled / custom / use_for / bypass_domains） |
 | `ai` | DeepSeek 配置（model / base_url / max_cost_yuan 预算上限） |
 | `fetch` | 抓取引擎（scrapling / timeout / concurrency） |
+| `probe` | 探活配置（timeout 10s / max_fail_confirm 3 次，防网络抖动误判失效） |
 | `output` | 导出默认值（`export_include_dead: false`、`export_include_local: true`） |
 | `categories` | 空数组 — 分类由 AI 自动生成 |
 

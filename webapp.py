@@ -277,6 +277,15 @@ async def delete_all_dead():
     return {"ok": True, "deleted": count}
 
 
+@app.post("/api/merge")
+async def merge_categories(body: dict = {}):
+    """合并小分类: body = {min_count: int}（默认 2），l1 下 ≤min_count 条的 l2 归并到「其他」"""
+    min_count = int(body.get("min_count", 2))
+    merged = pipeline.merge_small_categories(min_count=min_count)
+    total_merged = sum(sum(subs.values()) for subs in merged.values())
+    return {"ok": True, "merged_l2": len(merged), "bookmarks_moved": total_merged, "detail": merged}
+
+
 # ──────────────────────────────────────────────
 #  导出
 # ──────────────────────────────────────────────

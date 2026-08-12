@@ -41,6 +41,9 @@ fetch:
   user_agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
     like Gecko) Chrome/125.0.0.0 Safari/537.36
   fallback_to_firecrawl: true
+probe:
+  timeout: 10
+  max_fail_confirm: 3
 classification:
   ai_enabled: true
   ai_confidence_threshold: 0.5

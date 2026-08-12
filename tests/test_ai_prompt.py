@@ -65,7 +65,7 @@ def test_freeform_prompt_when_no_categories():
     system, user = build_classify_prompt(info, [])
     assert "自动为书签生成两级分类" in system
     assert "可选分类体系" not in user
-    assert "分类由你自动生成" in user
+    assert "l1 必须从清单中选择" in user
     assert "页面摘要: Docker 容器化部署教程" in user
 
 

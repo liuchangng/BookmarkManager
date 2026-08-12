@@ -69,6 +69,11 @@ class ConfigManager:
             ),
             "fallback_to_firecrawl": True,
         },
+        "probe": {
+            # 探活超时（秒）与误判容忍：网络不稳时加大超时/连续失败次数，避免误标失效
+            "timeout": 10,
+            "max_fail_confirm": 3,
+        },
         "classification": {
             "ai_enabled": True,
             "ai_confidence_threshold": 0.5,

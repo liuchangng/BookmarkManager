@@ -438,6 +438,19 @@ $("deleteDeadBtn").addEventListener("click", async () => {
   alert(`已删除 ${res.deleted} 条失效链接`);
 });
 
+$("mergeBtn").addEventListener("click", async () => {
+  if (State.running) { alert("处理中，请等待完成"); return; }
+  if (!State.bookmarks.length) { alert("请先上传书签文件"); return; }
+  if (!confirm("将每个大类下书签数 ≤ 2 的小分类合并到「其他」，确定？")) return;
+  const res = await api("/api/merge", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ min_count: 2 }),
+  });
+  await refreshResults();
+  alert(`已合并 ${res.merged_l2} 个小分类，移动 ${res.bookmarks_moved} 条书签到「其他」`);
+});
+
 $("filterSelect").addEventListener("change", () => {
   State.filter = $("filterSelect").value;
   renderTable();

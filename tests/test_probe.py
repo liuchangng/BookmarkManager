@@ -180,11 +180,11 @@ def test_probe_fail_twice_becomes_dead():
     # .invalid 为 RFC 6761 保留 TLD，解析器本地返回 NXDOMAIN，无外部流量
     url = "http://nonexistent-domain-xyz-12345.invalid/"
     cache = LinkProbeCache(cache_dir=_tmp_cache_dir())
-    r1 = probe_urls([url], timeout=2.0, cache=cache)
+    r1 = probe_urls([url], timeout=2.0, cache=cache, max_fail_confirm=2)
     assert r1[url].status == "pending", f"首次失败应为 pending, 实际 {r1[url].status}"
     assert r1[url].attempts == 1
     assert "域名不存在" in r1[url].error or r1[url].error
-    r2 = probe_urls([url], timeout=2.0, cache=cache)
+    r2 = probe_urls([url], timeout=2.0, cache=cache, max_fail_confirm=2)
     assert r2[url].status == "dead", "连续两次失败应标 dead"
 
 

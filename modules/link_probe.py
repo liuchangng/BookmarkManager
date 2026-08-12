@@ -270,7 +270,7 @@ def _check_once(url: str, timeout: float) -> tuple[str, int, str, str]:
 #  批量探活（并发 + 防误判 + 缓存）
 # ──────────────────────────────────────────────
 
-def probe_urls(urls: list[str], *, timeout: float = 3.0, max_fail_confirm: int = 2,
+def probe_urls(urls: list[str], *, timeout: float = 10.0, max_fail_confirm: int = 3,
                max_age_seconds: int = 7 * 24 * 3600, cache: Optional[LinkProbeCache] = None,
                progress_cb: Optional[Callable[[LinkProbeResult], None]] = None,
                max_workers: int = 8,

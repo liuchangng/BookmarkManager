@@ -228,6 +228,52 @@ def test_fetch_many_parallel():
         assert elapsed < 2.0, f"并行未生效: {elapsed:.2f}s"
 
 
+def test_merge_small_categories(tmp_path):
+    """合并小分类：l1 下 ≤2 条的 l2 归并到「其他」，大分类不受影响"""
+    pl, _ = _make_pipeline(tmp_path)
+    pl.parse_file(str(_write_sample(tmp_path)))
+    bms = pl.bookmarks
+    # 3 条本地书签，手动分类制造混合分布
+    pl.set_classification(bms[0].url, "开发技术", "代码托管")
+    pl.set_classification(bms[1].url, "开发技术", "代码托管")
+    pl.set_classification(bms[2].url, "开发技术", "模板引擎")
+
+    # min_count=1: 书签数 ≤1 的小类合并 → 模板引擎(1条)合并；代码托管(2条)保留
+    merged = pl.merge_small_categories(min_count=1)
+    assert "模板引擎" in merged.get("开发技术", {}), "应合并掉 1 条的小类"
+    assert "代码托管" not in merged.get("开发技术", {}), "2 条的大分类不应合并"
+
+    # 验证书签实际被改
+    moved = [bm for bm in pl.bookmarks if bm.category_l2 == "其他"]
+    assert len(moved) == 1
+    assert moved[0].category_l1 == "开发技术"
+
+    # 再次合并应为空（没有更多可合并）
+    merged2 = pl.merge_small_categories(min_count=1)
+    assert not any(merged2.values()), "二次合并应为空"
+
+    # 分布树里「其他」计数正确
+    dist = pl.get_distribution()
+    assert dist["开发技术"]["其他"] == 1
+
+
+def test_merge_respects_user_deleted(tmp_path):
+    """合并跳过已删除书签"""
+    pl, _ = _make_pipeline(tmp_path)
+    pl.parse_file(str(_write_sample(tmp_path)))
+    bms = pl.bookmarks
+    pl.set_classification(bms[0].url, "开发技术", "代码托管")
+    pl.set_classification(bms[1].url, "开发技术", "模板引擎")
+    pl.delete_bookmark(bms[2].url)  # 第三条删除
+
+    merged = pl.merge_small_categories(min_count=2)
+    # 模板引擎 1 条 → 合并；代码托管 1 条（另一条已删）→ 也合并
+    assert merged.get("开发技术", {}).get("模板引擎") == 1
+    assert merged.get("开发技术", {}).get("代码托管") == 1
+    # 已删除的不被改动（未分类书签 l2 为空串）
+    assert bms[2].category_l2 in ("", "未分类")
+
+
 # ──────────────────────────────────────────────
 #  内置 runner（无 pytest 时可直接运行）
 # ──────────────────────────────────────────────

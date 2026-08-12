@@ -232,7 +232,13 @@ class Pipeline:
         cache_dir = self.config.get("classification.cache_dir", "data/cache")
         probe_cache = LinkProbeCache(cache_dir=f"{cache_dir}/probe")
         urls = [b.url for b in self.bookmarks]
-        probes = probe_urls(urls, cache=probe_cache)
+        probe_cfg = self.config.get("probe", {})
+        probes = probe_urls(
+            urls,
+            cache=probe_cache,
+            timeout=probe_cfg.get("timeout", 10.0),
+            max_fail_confirm=probe_cfg.get("max_fail_confirm", 3),
+        )
 
         counts = {"ok": 0, "dead": 0, "local": 0, "pending": 0}
         for bm in self.bookmarks:
@@ -598,6 +604,35 @@ class Pipeline:
                 bm.user_deleted = True
                 count += 1
         return count
+
+    def merge_small_categories(self, min_count: int = 2) -> dict:
+        """
+        合并小分类：把每个 l1 下书签数 ≤ min_count 的 l2 归并到该 l1 下的「其他」。
+        返回合并统计 {l1: {l2: count}}（合并掉的小类）
+        """
+        # 先统计每个 (l1, l2) 的书签数
+        stats: dict[str, dict[str, int]] = {}
+        for bm in self.bookmarks:
+            if bm.user_deleted:
+                continue
+            l1 = bm.category_l1 or "📁 其他"
+            l2 = bm.category_l2 or "未分类"
+            stats.setdefault(l1, {})
+            stats[l1][l2] = stats[l1].get(l2, 0) + 1
+
+        merged: dict[str, dict[str, int]] = {}
+        for bm in self.bookmarks:
+            if bm.user_deleted:
+                continue
+            l1 = bm.category_l1 or "📁 其他"
+            l2 = bm.category_l2 or "未分类"
+            if l2 == "其他":
+                continue
+            if stats[l1].get(l2, 0) <= min_count:
+                bm.category_l2 = "其他"
+                merged.setdefault(l1, {})
+                merged[l1][l2] = stats[l1][l2]
+        return merged
 
 
 # ──────────────────────────────────────────────

@@ -129,6 +129,9 @@ class Pipeline:
             },
             "firecrawl": self.config.get("firecrawl", {}),
             "fetch": self.config.get("fetch", {}),
+            # 关键: DeepSeekClient 从 config["ai"] 读 base_url/model，
+            # 缺了会回退到默认 deepseek.com，导致用 agnes 的 Key 请求 401
+            "ai": self.config.get("ai", {}),
             "classification": {"cache_dir": self.config.get("classification.cache_dir", "data/cache")},
         }
 

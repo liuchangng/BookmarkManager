@@ -14,8 +14,8 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from modules.ai_client import (
-    AIResult, build_classify_prompt, extract_summary_from_response,
-    parse_ai_response,
+    AIResult, L1_TAXONOMY, build_classify_prompt, extract_summary_from_response,
+    parse_ai_response, _normalize_l2,
 )
 
 CATEGORIES = [
@@ -59,35 +59,48 @@ def test_prompt_falls_back_to_text_when_no_summary():
 # ──────────────────────────────────────────────
 
 def test_freeform_prompt_when_no_categories():
-    """方案 A: 空 categories → 提示 AI 自动生成两级分类（无约束清单）"""
+    """方案 A: 空 categories → 固定 8 类体系，l1/l2 必须从清单选择"""
     info = {"title": "测试页", "url": "https://example.com/x", "domain": "example.com",
             "description": "", "keywords": [], "summary": "Docker 容器化部署教程"}
     system, user = build_classify_prompt(info, [])
-    assert "自动为书签生成两级分类" in system
+    assert "为书签选择两级分类" in system
+    assert "8 个固定分类" in system
+    assert "开发技术" in system and "娱乐休闲" in system and "其他" in system
     assert "可选分类体系" not in user
-    assert "l1 必须从清单中选择" in user
+    assert "8 个固定分类" in user
     assert "页面摘要: Docker 容器化部署教程" in user
 
 
-def test_parse_freeform_ai_labels_accepted():
-    """方案 A: 空分类时 AI 生成标签直接采用（去 emoji、空值兜底）"""
-    resp = ('{"l1": "开发技术", "l2": "容器编排", "confidence": 0.82, '
+def test_parse_freeform_ai_labels_validated():
+    """方案 A: l1/l2 硬校验到固定 8 类体系（合法保留、非法收敛、空值兜底）"""
+    # 合法 l1 + 推荐清单内 l2 → 保留
+    resp = ('{"l1": "开发技术", "l2": "代码托管", "confidence": 0.82, '
             '"reason": "docker教程", "summary": "x"}')
     l1, l2, conf, reason = parse_ai_response(resp, [])
     assert l1 == "开发技术"
-    assert l2 == "容器编排"
+    assert l2 == "代码托管"
     assert conf == 0.82
     assert reason == "docker教程"
 
-    # 带 emoji 的标签被清洗
-    l1e, l2e, _, _ = parse_ai_response('{"l1": "💻 开发技术", "l2": "🚀 部署工具", "confidence": 0.8}', [])
-    assert l1e == "开发技术"
-    assert l2e == "部署工具"
+    # 合法 l1 但 l2 不在推荐清单 → 收敛到「未分类」
+    l1c, l2c, _, _ = parse_ai_response('{"l1": "开发技术", "l2": "容器编排", "confidence": 0.8}', [])
+    assert l1c == "开发技术"
+    assert l2c == "未分类"
+
+    # 非法 l1（AI 自造）→ 收敛到「其他」；emoji 被清洗
+    l1e, l2e, _, _ = parse_ai_response('{"l1": "💻 我的自造分类", "l2": "🚀 部署工具", "confidence": 0.8}', [])
+    assert l1e == "其他"
+    assert l2e == "未分类"
 
     # 缺 l1/l2 → 其他/未分类 兜底
     l1m, l2m, _, _ = parse_ai_response('{"l1": "", "l2": "", "confidence": 0.1}', [])
-    assert l1m == "📁 其他"
+    assert l1m == "其他"
     assert l2m == "未分类"
+
+    # 8 类内的模糊匹配（AI 返回带前后缀的 l1）→ 归一
+    l1f, _, _, _ = parse_ai_response('{"l1": "工具软件类", "l2": "效率工具", "confidence": 0.8}', [])
+    assert l1f == "工具软件"
+    assert _normalize_l2("工具软件", "效率工具") == "效率工具"
 
 
 # ──────────────────────────────────────────────

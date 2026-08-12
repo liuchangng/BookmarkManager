@@ -438,6 +438,15 @@ $("deleteDeadBtn").addEventListener("click", async () => {
   alert(`已删除 ${res.deleted} 条失效链接`);
 });
 
+$("remapBtn").addEventListener("click", async () => {
+  if (State.running) { alert("处理中，请等待完成"); return; }
+  if (!State.bookmarks.length) { alert("请先上传书签文件"); return; }
+  if (!confirm("将所有一级分类收敛到固定 8 类（关键词映射，未命中归「其他」），确定？")) return;
+  const res = await api("/api/remap", { method: "POST" });
+  await refreshResults();
+  alert(`已收敛 ${res.old_categories_merged} 个一级分类到固定 8 类`);
+});
+
 $("mergeBtn").addEventListener("click", async () => {
   if (State.running) { alert("处理中，请等待完成"); return; }
   if (!State.bookmarks.length) { alert("请先上传书签文件"); return; }

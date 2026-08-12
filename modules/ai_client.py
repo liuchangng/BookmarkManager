@@ -135,6 +135,59 @@ class AICache:
 
 
 # ──────────────────────────────────────────────
+#  固定分类体系（方案 A 用）
+#  8 个一级分类 + 每类推荐二级分类清单：AI 必须从清单选择，禁止自造新名称
+# ──────────────────────────────────────────────
+
+L1_TAXONOMY: dict[str, list[str]] = {
+    "开发技术": ["代码托管", "编程语言", "开发框架", "开发工具", "数据库", "运维部署", "云原生", "测试"],
+    "人工智能": ["AI 工具", "大模型", "机器学习", "提示词工程", "AI 教程", "AIGC"],
+    "工具软件": ["在线工具", "效率工具", "设计工具", "办公软件", "系统工具", "浏览器插件"],
+    "学习资源": ["技术教程", "在线课程", "技术文档", "技术博客", "面试求职", "社区论坛"],
+    "新闻资讯": ["科技新闻", "行业动态", "产品发布", "技术资讯"],
+    "生活服务": ["购物消费", "出行交通", "本地生活", "健康养生", "家居生活", "美食"],
+    "娱乐休闲": ["视频", "音乐", "游戏", "动漫", "社交", "阅读"],
+    "其他": ["未分类"],
+}
+
+
+def _taxonomy_text() -> str:
+    """把 8 类体系渲染成 prompt 文本"""
+    lines = []
+    for l1, l2s in L1_TAXONOMY.items():
+        lines.append(f"{l1}: {'、'.join(l2s)}")
+    return "\n".join(lines)
+
+
+def _normalize_l1(l1: str) -> str:
+    """硬校验：l1 必须属于 8 类体系，模糊匹配后仍不匹配则归「其他」"""
+    l1 = l1.strip()
+    if not l1:
+        return "其他"
+    if l1 in L1_TAXONOMY:
+        return l1
+    # 模糊匹配（包含关系）——注意空串是任意字符串子串，已在上面排除
+    for valid in L1_TAXONOMY:
+        if valid in l1 or l1 in valid:
+            return valid
+    return "其他"
+
+
+def _normalize_l2(l1: str, l2: str) -> str:
+    """硬校验：l2 必须属于该 l1 的推荐清单，模糊匹配后仍不匹配则归「未分类」"""
+    l2 = l2.strip()
+    if not l2:
+        return "未分类"
+    valid = L1_TAXONOMY.get(l1, ["未分类"])
+    if l2 in valid:
+        return l2
+    for v in valid:
+        if v in l2 or l2 in v:
+            return v
+    return "未分类"
+
+
+# ──────────────────────────────────────────────
 #  Prompt 构建
 # ──────────────────────────────────────────────
 
@@ -145,27 +198,22 @@ def build_classify_prompt(bookmark_info: dict, categories: list[dict]) -> tuple[
     categories: config 中的 categories 列表；为空时 → 方案 A：AI 自由生成两级分类
     """
     if not categories:
-        # ── 方案 A: 无固定分类配置，AI 自动生成标签（全程自动化）──
-        # 推荐一级分类清单：控制 l1 数量（避免碎片化），AI 必须从清单选择
-        L1_RECOMMENDED = (
-            "开发技术、人工智能、工具软件、效率办公、教育学习、新闻资讯、"
-            "购物消费、生活服务、家居生活、视频娱乐、音乐音频、游戏动漫、"
-            "社交社区、金融理财、健康养生、其他"
-        )
+        # ── 方案 A: 固定 8 个一级分类 + 推荐二级清单，AI 必须从清单选择 ──
         system = (
             "你是一个专业的书签分类助手。\n"
-            "任务: 根据用户提供的网页信息，自动为书签生成两级分类。\n"
+            "任务: 根据用户提供的网页信息，为书签选择两级分类。\n"
             "要求:\n"
-            "1. 一级分类(l1) 必须从以下清单中选择，禁止自造新的一级分类: "
-            f"{L1_RECOMMENDED}\n"
-            "2. 二级分类(l2): 2-8 字贴切小类（例如: 代码托管、在线视频、优惠券/比价）\n"
-            "3. 相同主题的书签必须使用完全相同的 l2 名称，禁止同义反复（如「技术博客」和「博客教程」是同一主题，必须用同一个名字）\n"
-            "4. 分类名称不要带 emoji、符号或编号\n"
-            "5. 给出置信度 (0-1 之间的小数) 与简短理由 (≤20字)\n"
-            "6. 用一句话概括该网页内容作为 summary (≤50字)\n"
-            "7. 严格输出 JSON 格式，不要输出其他内容\n\n"
+            "1. 一级分类(l1) 必须从以下 8 个固定分类中选择，禁止自造新的一级分类: "
+            f"{'、'.join(L1_TAXONOMY.keys())}\n"
+            "2. 二级分类(l2) 必须从该 l1 对应的推荐清单中选择，禁止自造新的二级名称; "
+            "推荐清单如下:\n"
+            f"{_taxonomy_text()}\n"
+            "3. 如果确实没有匹配的二级分类，使用「未分类」；没有匹配的一级分类，使用「其他」\n"
+            "4. 给出置信度 (0-1 之间的小数) 与简短理由 (≤20字)\n"
+            "5. 用一句话概括该网页内容作为 summary (≤50字)\n"
+            "6. 严格输出 JSON 格式，不要输出其他内容\n\n"
             "输出格式示例:\n"
-            '{"l1": "开发技术", "l2": "文档教程", "confidence": 0.85, "reason": "Python官方文档", "summary": "Python 标准库官方文档"}\n'
+            '{"l1": "开发技术", "l2": "编程语言", "confidence": 0.85, "reason": "Python官方文档", "summary": "Python 标准库官方文档"}\n'
         )
     else:
         # ── 有固定分类体系：AI 从给定体系中选择（约束模式，保留兼容）──
@@ -212,7 +260,7 @@ def build_classify_prompt(bookmark_info: dict, categories: list[dict]) -> tuple[
             f"  描述: {desc}\n"
             f"  关键词: {kw_str}\n"
             f"  页面摘要: {summary}\n\n"
-            f"l1 必须从清单中选择；l2 请优先复用与同类书签一致的命名。\n"
+            f"l1 必须从 8 个固定分类中选择；l2 必须从该 l1 的推荐清单中选择。\n"
             f'请直接输出 JSON: {{"l1": "...", "l2": "...", "confidence": 0.x, "reason": "...", "summary": "..."}}'
         )
     else:
@@ -299,14 +347,12 @@ def parse_ai_response(response_text: str, categories: list[dict]) -> tuple[str, 
     reason = str(data.get("reason", "")).strip()[:50]
 
     if not categories:
-        # ── 方案 A: 无固定分类配置，AI 标签直接采用（仅做基本清洗）──
+        # ── 方案 A: 固定 8 类体系，l1/l2 硬校验（模糊匹配 → 兜底）──
         import re
         l1 = re.sub(r"[\U0001F300-\U0001FAFF\u2600-\u27BF]", "", l1).strip()[:20]
         l2 = re.sub(r"[\U0001F300-\U0001FAFF\u2600-\u27BF]", "", l2).strip()[:20]
-        if not l1:
-            l1 = "📁 其他"
-        if not l2:
-            l2 = "未分类"
+        l1 = _normalize_l1(l1)
+        l2 = _normalize_l2(l1, l2)
     else:
         # 验证 l1 是否在分类体系中
         valid_l1 = {c.get("name", "") for c in categories}

@@ -20,7 +20,7 @@ from modules.parser import BookmarkParser
 from modules.classifier import Classifier
 from modules.cache import ClassifyCache
 from modules.fetcher import WebFetcher, ProxyAdapter
-from modules.ai_client import OpenAIClient
+from modules.ai_client import OpenAIClient, L1_TAXONOMY, _normalize_l1, _normalize_l2
 from modules.summarizer import summarize_bookmarks
 from modules.link_probe import LinkProbeCache, probe_urls
 from modules.bookmark import Bookmark
@@ -35,6 +35,50 @@ STAGE_FETCH = "fetch"
 STAGE_SUMMARY = "summary"
 STAGE_AI = "ai"
 STAGE_DONE = "done"
+
+# ──────────────────────────────────────────────
+#  一级分类收敛（remap）
+#  把历史碎片化 l1 按关键词映射到固定 8 类体系；未命中归「其他」
+#  关键词按优先级顺序匹配（先技术类，命中即返回）
+# ──────────────────────────────────────────────
+
+L1_KEYWORDS: list[tuple[str, tuple[str, ...]]] = [
+    ("开发技术", ("开发", "编程", "代码", "java", "python", "javascript", "typescript", "前端", "后端",
+                  "数据库", "sql", "框架", "spring", "git", "github", "运维", "部署", "容器", "docker",
+                  "kubernetes", "k8s", "测试", "自动化", "爬虫", "算法", "架构", "微服务", "api", "开源",
+                  "编译", "linux", "devops", "vue", "react", "node", "c++", "golang", "rust", "php",
+                  "小程序", "低代码", "调试", "性能", "监控", "安全", "网络", "数据库")),
+    ("人工智能", ("人工智能", "机器学习", "深度学习", "大模型", "llm", "gpt", "chatgpt", "提示词", "prompt",
+                  "stable diffusion", "agent", "智能体", "神经网络", "nlp", "计算机视觉", "语音", "数字人",
+                  "aigc", "midjourney", "claude", "gemini", "ai 工具", " ai", "ai_")),
+    ("工具软件", ("工具", "软件", "效率", "在线工具", "设计工具", "办公", "excel", "word", "ppt", "截图", "录屏",
+                  "思维导图", "笔记", "todo", "日历", "密码", "vpn", "下载", "压缩", "pdf", "ocr", "翻译",
+                  "输入法", "插件", "扩展", "浏览器")),
+    ("学习资源", ("教程", "课程", "学习", "培训", "文档", "博客", "面试", "题库", "考试", "大学", "mooc",
+                  "公开课", "百科", "论文", "期刊", "电子书", "教育", "学堂", "学院", "知识", "求职")),
+    ("新闻资讯", ("新闻", "资讯", "日报", "周报", "行业动态", "快讯", "头条", "媒体", "36氪", "虎嗅",
+                  "infoq", "开源中国")),
+    ("生活服务", ("购物", "电商", "淘宝", "京东", "拼多多", "亚马逊", "优惠", "折扣", "生活", "健康", "医疗",
+                  "医院", "美食", "菜谱", "外卖", "出行", "交通", "地图", "天气", "房价", "租房", "家政",
+                  "缴费", "银行", "理财", "保险", "股票", "基金", "信用卡", "旅游", "住房")),
+    ("娱乐休闲", ("视频", "音乐", "游戏", "动漫", "电影", "电视剧", "小说", "阅读", "直播", "哔哩哔哩",
+                  "b站", "抖音", "快手", "微博", "社交", "论坛", "社区", "贴吧", "壁纸", "图片", "摄影",
+                  "体育", "综艺", "漫画")),
+]
+
+
+def remap_l1_keywords(text: str, url: str = "", title: str = "") -> str:
+    """按关键词把 l1 文本（含 URL/标题兜底）映射到 8 类体系；未命中归「其他」"""
+    stripped = text.strip()
+    if stripped in ("其他", "📁 其他"):
+        return "其他"
+    hay = f"{text} {url} {title}".lower()
+    for l1, kws in L1_KEYWORDS:
+        for kw in kws:
+            if kw in hay:
+                return l1
+    return "其他"
+
 
 STAGE_LABELS = {
     STAGE_PARSE: "解析书签",
@@ -506,6 +550,14 @@ class Pipeline:
         self._log("SUCCESS",
                   f"🎉 AI 分类完成! ✅{success} 💾{cached} ❌{failed}")
         self._log("INFO", f"💰 费用: ¥{stats['estimated_cost_yuan']:.4f} / ¥{max_cost:.2f}")
+        # 自动收敛：AI 自造的碎片小类（≤2 条）归并到该 l1 下的「其他」
+        try:
+            merged = self.merge_small_categories(min_count=2)
+            merged_total = sum(sum(c.values()) for c in merged.values())
+            if merged_total:
+                self._log("INFO", f"🧹 自动合并小分类: {merged_total} 条并入「其他」")
+        except Exception:
+            self._log("WARN", "自动合并小分类失败（可手动点「合并小分类」）")
         self._progress(STAGE_AI, 95, "AI 分类完成")
         self._emit({"type": "bookmarks_updated"})
 
@@ -604,6 +656,27 @@ class Pipeline:
                 bm.user_deleted = True
                 count += 1
         return count
+
+    def remap_to_taxonomy(self) -> dict:
+        """
+        把现有 l1 收敛到固定 8 类体系（关键词映射，未命中归「其他」）。
+        l2 若不在新 l1 的推荐清单中则归「未分类」。
+        返回 {旧l1: 移动条数}
+        """
+        remapped: dict[str, int] = {}
+        for bm in self.bookmarks:
+            if bm.user_deleted:
+                continue
+            old_l1 = bm.category_l1 or "其他"
+            new_l1 = remap_l1_keywords(old_l1, bm.url, bm.title)
+            if new_l1 != old_l1:
+                bm.category_l1 = new_l1
+                bm.category_l2 = _normalize_l2(new_l1, bm.category_l2 or "未分类")
+                remapped[old_l1] = remapped.get(old_l1, 0) + 1
+        if remapped:
+            self._log("INFO",
+                      f"🗂️ 分类收敛: {len(remapped)} 个旧一级分类已归并到固定 8 类")
+        return remapped
 
     def merge_small_categories(self, min_count: int = 2) -> dict:
         """

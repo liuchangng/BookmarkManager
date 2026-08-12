@@ -257,6 +257,46 @@ def test_merge_small_categories(tmp_path):
     assert dist["开发技术"]["其他"] == 1
 
 
+def test_remap_to_taxonomy(tmp_path):
+    """收敛现有碎片化 l1 到固定 8 类：关键词命中映射、未命中归「其他」、l2 同步校验"""
+    pl, _ = _make_pipeline(tmp_path)
+    pl.parse_file(str(_write_sample(tmp_path)))
+    bms = pl.bookmarks
+    # 制造碎片化 l1（历史 AI 自造分类）
+    pl.set_classification(bms[0].url, "Java框架", "Spring全家桶")
+    pl.set_classification(bms[1].url, "Docker教程", "容器编排")
+    pl.set_classification(bms[2].url, "开发技术", "代码托管")
+
+    remapped = pl.remap_to_taxonomy()
+    l1s = [bm.category_l1 for bm in pl.bookmarks]
+    # 三个全部收敛到「开发技术」（关键词：Java/框架、Docker/教程）
+    assert l1s.count("开发技术") == 3
+    assert "Java框架" not in l1s and "Docker教程" not in l1s
+    assert "Java框架" in remapped and "Docker教程" in remapped
+    # l2 收敛到新 l1 的推荐清单（Spring全家桶/容器编排 不在清单 → 未分类；代码托管 在清单 → 保留）
+    assert bms[0].category_l2 == "未分类"
+    assert bms[1].category_l2 == "未分类"
+    assert bms[2].category_l2 == "代码托管"
+    # 幂等：再次收敛无变化
+    assert pl.remap_to_taxonomy() == {}
+
+
+def test_remap_l1_keywords_pure():
+    """关键词映射纯函数：命中收敛、未命中归「其他」、URL 兜底"""
+    from modules.pipeline import remap_l1_keywords
+    assert remap_l1_keywords("Java框架") == "开发技术"
+    assert remap_l1_keywords("Docker教程") == "开发技术"
+    assert remap_l1_keywords("AI大模型") == "人工智能"
+    assert remap_l1_keywords("在线工具合集") == "工具软件"
+    assert remap_l1_keywords("技术博客") == "学习资源"
+    assert remap_l1_keywords("购物优惠") == "生活服务"
+    assert remap_l1_keywords("视频网站") == "娱乐休闲"
+    assert remap_l1_keywords("完全随意的命名") == "其他"
+    assert remap_l1_keywords("") == "其他"
+    # URL 兜底
+    assert remap_l1_keywords("", "https://github.com/foo") == "开发技术"
+
+
 def test_merge_respects_user_deleted(tmp_path):
     """合并跳过已删除书签"""
     pl, _ = _make_pipeline(tmp_path)

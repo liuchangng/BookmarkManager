@@ -277,6 +277,13 @@ async def delete_all_dead():
     return {"ok": True, "deleted": count}
 
 
+@app.post("/api/remap")
+async def remap_categories():
+    """把现有 l1 收敛到固定 8 类体系（关键词映射，未命中归「其他」）"""
+    remapped = pipeline.remap_to_taxonomy()
+    return {"ok": True, "old_categories_merged": len(remapped), "detail": remapped}
+
+
 @app.post("/api/merge")
 async def merge_categories(body: dict = {}):
     """合并小分类: body = {min_count: int}（默认 2），l1 下 ≤min_count 条的 l2 归并到「其他」"""

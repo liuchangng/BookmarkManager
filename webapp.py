@@ -88,6 +88,7 @@ def _serialize_bookmark(bm) -> dict:
         "http_status": bm.http_status,
         "probe_error": bm.probe_error or "",
         "page_summary": bm.page_summary or "",
+        "tags": list(bm.tags or []),
         "user_confirmed": bm.user_confirmed,
         "user_deleted": bm.user_deleted,
     }

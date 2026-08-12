@@ -512,12 +512,12 @@ class Pipeline:
                     cached += 1
                 else:
                     success += 1
-                    bm.category_l1 = result.category_l1
-                    bm.category_l2 = result.category_l2
-                    bm.confidence = result.confidence
+                # 标签模式: 只收集标签，分类由服务端按频率聚类
+                if result.tags:
+                    bm.tags = result.tags
                     bm.classify_method = "ai_deepseek"
-                    if result.summary:
-                        bm.page_summary = result.summary
+                if result.summary:
+                    bm.page_summary = result.summary
             else:
                 failed += 1
 
@@ -548,9 +548,20 @@ class Pipeline:
         client.save_cache()
         stats = client.get_stats()
         self._log("SUCCESS",
-                  f"🎉 AI 分类完成! ✅{success} 💾{cached} ❌{failed}")
+                  f"🏷️ AI 标签生成完成! ✅{success} 💾{cached} ❌{failed}")
         self._log("INFO", f"💰 费用: ¥{stats['estimated_cost_yuan']:.4f} / ¥{max_cost:.2f}")
-        # 自动收敛：AI 自造的碎片小类（≤2 条）归并到该 l1 下的「其他」
+
+        # ── 服务端按标签频率聚类（确定性、可解释、天然收敛）──
+        from modules.tag_classifier import classify_by_tag_frequency
+        dist = classify_by_tag_frequency(self.bookmarks)
+        if dist:
+            l1_total = sum(sum(c.values()) for c in dist.values())
+            self._log("SUCCESS",
+                      f"🗂️ 标签聚类完成: {len(dist)} 个一级分类，覆盖 {l1_total} 条书签")
+        else:
+            self._log("WARN", "⚠️ 无可用标签，全部书签保持未分类")
+
+        # 自动收敛：边缘小类（≤2 条）归并到该 l1 下的「其他」
         try:
             merged = self.merge_small_categories(min_count=2)
             merged_total = sum(sum(c.values()) for c in merged.values())

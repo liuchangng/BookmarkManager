@@ -59,8 +59,8 @@ class ConfigManager:
         },
         "fetch": {
             "engine": "scrapling",
-            "timeout": 10,
-            "max_retries": 2,
+            "timeout": 60,
+            "max_retries": 3,
             "concurrency": 5,
             "user_agent": (
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "

@@ -26,7 +26,7 @@ DEFAULT_BASE_URL = "https://api.deepseek.com/v1"
 DEFAULT_MODEL = "deepseek-chat"
 MAX_PROMPT_CHARS = 2000  # 单次请求最大上下文（T3: AI 输入改为页面摘要，不再塞长正文）
 ESTIMATED_PRICE_PER_1K = 0.0014  # deepseek-chat 输入约 $0.0014/1K tokens (约 ¥0.01)
-AI_CACHE_VERSION = "3"  # v3: 方案 A——移除固定分类配置，AI 自由生成标签
+AI_CACHE_VERSION = "4"  # v4: 标签模式——AI 生成规范标签，分类由服务端按频率聚类
 
 
 # ──────────────────────────────────────────────
@@ -44,6 +44,7 @@ class AIResult:
         self.confidence: float = 0.0
         self.reason: str = ""
         self.summary: str = ""   # T3: AI 生成的一句话摘要（回写 Bookmark.page_summary）
+        self.tags: list = []     # 标签模式: AI 生成的规范标签（服务端按频率聚类）
         self.raw_response: str = ""
         self.tokens_used: int = 0
         self.elapsed_ms: int = 0
@@ -59,6 +60,7 @@ class AIResult:
             "confidence": self.confidence,
             "reason": self.reason,
             "summary": self.summary,
+            "tags": self.tags,
             "tokens_used": self.tokens_used,
             "elapsed_ms": self.elapsed_ms,
             "error": self.error,
@@ -191,54 +193,29 @@ def _normalize_l2(l1: str, l2: str) -> str:
 #  Prompt 构建
 # ──────────────────────────────────────────────
 
-def build_classify_prompt(bookmark_info: dict, categories: list[dict]) -> tuple[str, str]:
+def build_classify_prompt(bookmark_info: dict, categories: list[dict] | None = None) -> tuple[str, str]:
     """
-    构建分类 prompt (system + user)
+    构建标签生成 prompt (system + user)。
+
+    AI 只生成 10 个规范标签 + 一句话摘要，**不直接输出分类**。
+    两级分类由服务端按标签频率聚类（见 modules/tag_classifier.py）——
+    确定性、可解释、不会碎片化。
+
     bookmark_info: {title, url, domain, description, keywords, text}
-    categories: config 中的 categories 列表；为空时 → 方案 A：AI 自由生成两级分类
+    categories: 保留参数（兼容），不再使用
     """
-    if not categories:
-        # ── 方案 A: 固定 8 个一级分类 + 推荐二级清单，AI 必须从清单选择 ──
-        system = (
-            "你是一个专业的书签分类助手。\n"
-            "任务: 根据用户提供的网页信息，为书签选择两级分类。\n"
-            "要求:\n"
-            "1. 一级分类(l1) 必须从以下 8 个固定分类中选择，禁止自造新的一级分类: "
-            f"{'、'.join(L1_TAXONOMY.keys())}\n"
-            "2. 二级分类(l2) 必须从该 l1 对应的推荐清单中选择，禁止自造新的二级名称; "
-            "推荐清单如下:\n"
-            f"{_taxonomy_text()}\n"
-            "3. 如果确实没有匹配的二级分类，使用「未分类」；没有匹配的一级分类，使用「其他」\n"
-            "4. 给出置信度 (0-1 之间的小数) 与简短理由 (≤20字)\n"
-            "5. 用一句话概括该网页内容作为 summary (≤50字)\n"
-            "6. 严格输出 JSON 格式，不要输出其他内容\n\n"
-            "输出格式示例:\n"
-            '{"l1": "开发技术", "l2": "编程语言", "confidence": 0.85, "reason": "Python官方文档", "summary": "Python 标准库官方文档"}\n'
-        )
-    else:
-        # ── 有固定分类体系：AI 从给定体系中选择（约束模式，保留兼容）──
-        system = (
-            "你是一个专业的书签分类助手。\n"
-            "任务: 根据用户提供的网页信息，将其分类到给定的分类体系中。\n"
-            "要求:\n"
-            "1. 必须选择分类体系中最匹配的 一级分类 和 二级分类\n"
-            "2. 给出置信度 (0-1 之间的小数)\n"
-            "3. 给出简短分类理由 (≤20字)\n"
-            "4. 用一句话概括该网页内容作为 summary (≤50字)\n"
-            "5. 严格输出 JSON 格式，不要输出其他内容\n\n"
-            "输出格式示例:\n"
-            '{"l1": "💻 开发技术", "l2": "文档教程", "confidence": 0.85, "reason": "Python官方文档教程", "summary": "Python 标准库官方文档"}\n'
-        )
-
-    # 构建分类体系描述（仅约束模式）
-    cat_desc = []
-    for cat in categories:
-        name = cat.get("name", "")
-        subs = cat.get("sub_categories", [])
-        subs_str = "、".join(subs) if subs else "未分类"
-        cat_desc.append(f"  {name}: [{subs_str}]")
-
-    cat_text = "\n".join(cat_desc)
+    system = (
+        "你是一个专业的网页内容分析助手。\n"
+        "任务: 根据用户提供的网页信息，为书签生成 10 个关键词标签和一句话摘要。\n"
+        "要求:\n"
+        "1. 标签必须准确概括网页的主题、内容类型、技术栈或用途，用 2-6 字中文词或常见英文技术词\n"
+        "2. 相同主题必须使用完全相同的标签词，禁止同义变体（例如「教程」和「学习教程」只能选一个）\n"
+        "3. 标签不要带 emoji、标点或编号，每个标签独立\n"
+        "4. 摘要用一句话概括网页内容（≤50字）\n"
+        "5. 严格输出 JSON 格式，不要输出其他内容\n\n"
+        "输出格式示例:\n"
+        '{"tags": ["docker", "容器", "部署", "教程", "运维"], "summary": "Docker 容器化部署入门教程"}\n'
+    )
 
     # User prompt
     title = bookmark_info.get("title", "")[:200]
@@ -246,38 +223,45 @@ def build_classify_prompt(bookmark_info: dict, categories: list[dict]) -> tuple[
     domain = bookmark_info.get("domain", "")
     desc = bookmark_info.get("description", "")[:300]
     keywords = bookmark_info.get("keywords", [])
-    # T3: 页面摘要（本地摘要或 AI 摘要），替代原 500 字长正文 → 省 token
     summary = (bookmark_info.get("summary") or bookmark_info.get("text") or "")[:300]
-
     kw_str = "、".join(keywords[:10]) if keywords else "无"
 
-    if not categories:
-        user = (
-            f"网页信息:\n"
-            f"  标题: {title}\n"
-            f"  URL: {url}\n"
-            f"  域名: {domain}\n"
-            f"  描述: {desc}\n"
-            f"  关键词: {kw_str}\n"
-            f"  页面摘要: {summary}\n\n"
-            f"l1 必须从 8 个固定分类中选择；l2 必须从该 l1 的推荐清单中选择。\n"
-            f'请直接输出 JSON: {{"l1": "...", "l2": "...", "confidence": 0.x, "reason": "...", "summary": "..."}}'
-        )
-    else:
-        user = (
-            f"网页信息:\n"
-            f"  标题: {title}\n"
-            f"  URL: {url}\n"
-            f"  域名: {domain}\n"
-            f"  描述: {desc}\n"
-            f"  关键词: {kw_str}\n"
-            f"  页面摘要: {summary}\n\n"
-            f"可选分类体系:\n"
-            f"{cat_text}\n\n"
-            f'请直接输出 JSON: {{"l1": "...", "l2": "...", "confidence": 0.x, "reason": "...", "summary": "..."}}'
-        )
+    user = (
+        f"网页信息:\n"
+        f"  标题: {title}\n"
+        f"  URL: {url}\n"
+        f"  域名: {domain}\n"
+        f"  描述: {desc}\n"
+        f"  关键词: {kw_str}\n"
+        f"  页面摘要: {summary}\n\n"
+        f'请直接输出 JSON: {{"tags": ["标签1", "标签2", ...], "summary": "..."}}'
+    )
 
     return system, user
+
+
+def parse_tags_response(response_text: str) -> tuple[list[str], str]:
+    """解析标签生成响应: (tags, summary)。容错处理 ```json 包裹，tags 去 emoji/空值"""
+    import re
+    text = (response_text or "").strip()
+    if text.startswith("```"):
+        text = text.strip("`")
+        if text.startswith("json"):
+            text = text[4:]
+        text = text.strip()
+    start = text.find("{")
+    end = text.rfind("}")
+    if start != -1 and end != -1 and end > start:
+        text = text[start:end + 1]
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError:
+        raise ValueError(f"无法解析AI响应: {(response_text or '')[:200]}")
+    tags = [re.sub(r"[\U0001F300-\U0001FAFF\u2600-\u27BF]", "", str(t)).strip()[:20]
+            for t in (data.get("tags") or [])]
+    tags = [t for t in tags if t][:20]
+    summary = str(data.get("summary", "")).strip()[:100]
+    return tags, summary
 
 
 def extract_summary_from_response(response_text: str) -> str:
@@ -474,6 +458,7 @@ class OpenAIClient:
             result.confidence = cached.get("confidence", 0)
             result.reason = cached.get("reason", "")
             result.summary = cached.get("summary", "")
+            result.tags = list(cached.get("tags", []) or [])
             result.model = cached.get("model", self.model)
             return result
 
@@ -493,13 +478,10 @@ class OpenAIClient:
                 response = self._call_api(system, user)
                 result.raw_response = response
 
-                # 解析
-                l1, l2, conf, reason = parse_ai_response(response, self.categories)
-                result.category_l1 = l1
-                result.category_l2 = l2
-                result.confidence = conf
-                result.reason = reason
-                result.summary = extract_summary_from_response(response)
+                # 解析标签（分类由服务端按标签频率聚类）
+                tags, summary = parse_tags_response(response)
+                result.tags = tags
+                result.summary = summary
                 result.success = True
                 result.model = self.model
 

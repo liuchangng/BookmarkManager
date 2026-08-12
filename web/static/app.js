@@ -352,12 +352,16 @@ function renderTable(l1, l2) {
 
     const l1Class = ["其他", "📁 其他"].includes(b.category_l1) ? "tag-l1" : "tag-l1";
     const unclass = !b.category_l1 || ["其他", "📁 其他"].includes(b.category_l1);
+    const tagHtml = (b.tags && b.tags.length)
+      ? `<div class="cell-tags">${b.tags.map(t => `<span class="tag tag-tag">${esc(t)}</span>`).join("")}</div>`
+      : "";
 
     tr.innerHTML = `
       <td class="muted">${i + 1}</td>
       <td>
         <div class="cell-title" title="${esc(b.url)}">${esc(b.title) || esc(b.url)}</div>
         <div class="cell-url">${esc(b.url)}</div>
+        ${tagHtml}
       </td>
       <td class="cell-domain">${esc(b.domain)}</td>
       <td>${unclass

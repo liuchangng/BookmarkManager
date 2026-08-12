@@ -228,6 +228,49 @@ def test_fetch_many_parallel():
         assert elapsed < 2.0, f"并行未生效: {elapsed:.2f}s"
 
 
+def test_fetch_many_parallel_timeout_skip():
+    """个别 URL 无有效超时（卡死）时按每条超时丢弃，不阻塞整体"""
+    import time
+    from modules.fetcher import WebFetcher, FetchResult
+
+    with tempfile.TemporaryDirectory() as d:
+        fetcher = WebFetcher(
+            config={
+                "fetch": {"timeout": 5, "concurrency": 4, "max_retries": 0},
+                "classification": {"cache_dir": d},
+            },
+            proxy_adapter=None,
+        )
+
+        def fake_fetch(url):
+            if url == "https://hang.example/":
+                time.sleep(30)  # 模拟无超时卡死
+            r = FetchResult(url, success=True)
+            r.title = f"title-{url}"
+            return r
+
+        fetcher.fetch = fake_fetch
+        urls = ["https://ok1.example/", "https://hang.example/", "https://ok2.example/"]
+
+        done_list = []
+        t0 = time.time()
+        results = fetcher.fetch_many_parallel(
+            urls, progress_cb=lambda n, t, r: done_list.append((n, t, r.url)),
+            per_url_timeout=1.0,
+        )
+        elapsed = time.time() - t0
+
+        print("DEBUG-RESULTS:", [r.url for r in results], flush=True)
+        assert len(results) == 3, "结果数量应完整（含超时丢弃）"
+        by_url = {r.url: r for r in results}
+        assert by_url["https://hang.example/"].success is False, "卡死 URL 应被标记失败"
+        assert "超时" in by_url["https://hang.example/"].error
+        assert by_url["https://ok1.example/"].success
+        assert by_url["https://ok2.example/"].success
+        # 整体应在超时阈值内返回，不被卡死线程拖住
+        assert elapsed < 5.0, f"卡死 URL 拖住了整体: {elapsed:.2f}s"
+
+
 def test_merge_small_categories(tmp_path):
     """合并小分类：l1 下 ≤2 条的 l2 归并到「其他」，大分类不受影响"""
     pl, _ = _make_pipeline(tmp_path)

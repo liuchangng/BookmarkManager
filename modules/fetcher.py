@@ -330,8 +330,8 @@ class WebFetcher:
         self.proxy = proxy_adapter or ProxyAdapter(config=config)
 
         fetch_cfg = self.config.get("fetch", {})
-        self.timeout = fetch_cfg.get("timeout", 10)
-        self.max_retries = fetch_cfg.get("max_retries", 2)
+        self.timeout = fetch_cfg.get("timeout", 60)
+        self.max_retries = fetch_cfg.get("max_retries", 3)
         self.concurrency = fetch_cfg.get("concurrency", 5)
         self.user_agent = fetch_cfg.get("user_agent", DEFAULT_UA)
         self.fallback_to_firecrawl = fetch_cfg.get("fallback_to_firecrawl", True)
@@ -686,36 +686,68 @@ class WebFetcher:
         return results
 
     def fetch_many_parallel(self, urls: list[str], progress_cb: Optional[Callable] = None,
-                            max_workers: Optional[int] = None) -> list[FetchResult]:
+                            max_workers: Optional[int] = None,
+                            per_url_timeout: Optional[float] = None) -> list[FetchResult]:
         """
         批量并行抓取（ThreadPoolExecutor，线程安全）。
         进度回调在调用线程串行触发（done_count, total, result）。
+
+        每条 URL 有独立硬超时（默认 60s）：超过后丢弃该 URL（记失败），
+        避免个别无超时兜底的请求（如代理握手卡死）拖住整个抓取阶段。
         """
         import concurrent.futures
         workers = max_workers or self.concurrency or 5
         total = len(urls)
+        # 兜底时长：覆盖 max_retries+1 次尝试（每次 timeout 秒）+ 退避余量
+        # 目的是兜住个别无有效超时的请求（如代理握手卡死），不误杀正常慢请求
+        per_url_timeout = per_url_timeout or max(self.timeout * (self.max_retries + 2), 120)
         results: list[FetchResult] = []
         done = 0
         results_lock = threading.Lock()
 
-        with concurrent.futures.ThreadPoolExecutor(
-                max_workers=workers, thread_name_prefix="fetch") as executor:
-            future_map = {executor.submit(self.fetch, u): u for u in urls}
-            for fut in concurrent.futures.as_completed(future_map):
-                url = future_map[fut]
-                try:
-                    result = fut.result()
-                except Exception as e:
-                    result = FetchResult(url, success=False)
-                    result.error = f"抓取异常: {type(e).__name__}: {str(e)[:80]}"
-                with results_lock:
-                    results.append(result)
-                    done += 1
-                if progress_cb:
+        executor = concurrent.futures.ThreadPoolExecutor(
+            max_workers=workers, thread_name_prefix="fetch")
+        future_map = {executor.submit(self.fetch, u): u for u in urls}
+        started = {f: time.time() for f in future_map}
+        pending = set(future_map)
+        try:
+            while pending:
+                finished, pending = concurrent.futures.wait(pending, timeout=0.5)
+                now = time.time()
+                for fut in finished:
+                    url = future_map[fut]
                     try:
-                        progress_cb(done, total, result)
-                    except Exception:
-                        pass
+                        result = fut.result()
+                    except Exception as e:
+                        result = FetchResult(url, success=False)
+                        result.error = f"抓取异常: {type(e).__name__}: {str(e)[:80]}"
+                    with results_lock:
+                        results.append(result)
+                        done += 1
+                    if progress_cb:
+                        try:
+                            progress_cb(done, total, result)
+                        except Exception:
+                            pass
+                # 超时兜底：个别请求无有效超时（如代理握手）时丢弃，不阻塞整体
+                for fut in list(pending):
+                    if now - started[fut] > per_url_timeout:
+                        pending.discard(fut)
+                        fut.cancel()
+                        url = future_map[fut]
+                        result = FetchResult(url, success=False)
+                        result.error = f"抓取超时({per_url_timeout:.0f}s)，已跳过"
+                        with results_lock:
+                            results.append(result)
+                            done += 1
+                        if progress_cb:
+                            try:
+                                progress_cb(done, total, result)
+                            except Exception:
+                                pass
+        finally:
+            # wait=False：卡死的线程不阻塞流水线（其请求大多有 10s 超时会自行结束）
+            executor.shutdown(wait=False)
 
         self.cache.save()
         return results

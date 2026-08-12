@@ -22,13 +22,13 @@ proxy:
   - 127.0.0.1
 ai:
   provider: deepseek
-  model: agnes-2.0-flash
-  base_url: https://apihub.agnes-ai.com/v1
+  model: agnes-2.5-flash
+  base_url: https://api.agnes-ai.cn/v1
   timeout: 30
   max_retries: 3
   concurrency: 3
   batch_size: 5
-  max_cost_yuan: 5.0
+  max_cost_yuan: 1000000000.0
 firecrawl:
   enabled: true
   api_url: https://api.firecrawl.dev/v1
@@ -38,7 +38,8 @@ fetch:
   timeout: 10
   max_retries: 2
   concurrency: 5
-  user_agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36
+  user_agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
+    like Gecko) Chrome/125.0.0.0 Safari/537.36
   fallback_to_firecrawl: true
 classification:
   ai_enabled: true
@@ -47,7 +48,6 @@ classification:
   cache_dir: data/cache
   allow_delete: true
   confirm_delete: true
-# 分类由 AI 自动生成（方案 A：全程自动化），无需维护分类/关键词配置
 categories: []
 output:
   export_dir: data/exports
@@ -56,9 +56,8 @@ output:
   html_dir: data/exports
   log_dir: data/logs
   log_level: INFO
-  # T5.3 导出包含选项默认值（导出对话框可临时勾选）
-  export_include_dead: false    # 失效链接默认排除
-  export_include_local: true    # 本地/内网默认包含
+  export_include_dead: false
+  export_include_local: true
 web:
   host: 127.0.0.1
   port: 8989

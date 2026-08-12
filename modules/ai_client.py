@@ -486,7 +486,15 @@ class DeepSeekClient:
     # ──────────────────────────────────────────────
 
     def _call_api(self, system: str, user: str) -> str:
-        """调用 DeepSeek Chat Completions API"""
+        """
+        调用 Chat Completions API
+
+        代理策略（先直连，失败走代理）:
+          1. 先直接请求（不走代理）——国内/白名单 API 直连更快更稳
+          2. 直连失败 → 用配置的代理再请求一次
+          3. 仍失败 → 抛出异常，由 classify_one 外层重试（默认 3 次）
+          4. 全部失败 → result.success=False，书签归为未分类
+        """
         if not self.api_key:
             raise ValueError("API Key 未配置")
 
@@ -506,32 +514,51 @@ class DeepSeekClient:
             "response_format": {"type": "json_object"},  # DeepSeek 支持
         }
 
-        # 代理
-        proxies = None
+        # 候选通道: 先直连，再代理（若配置了代理且该 URL 不绕过）
+        candidates = [None]  # 直连
         if self.proxy:
-            proxies = self.proxy.get_proxies(url)
+            px = self.proxy.get_proxies(url)
+            if px:
+                candidates.append(px)
 
-        resp = requests.post(
-            url,
-            json=payload,
-            headers=headers,
-            timeout=self.timeout,
-            proxies=proxies,
-        )
+        last_error: Optional[Exception] = None
+        for i, proxies in enumerate(candidates):
+            mode = "直连" if proxies is None else f"代理 {proxies.get('http', '')}"
+            try:
+                resp = requests.post(
+                    url,
+                    json=payload,
+                    headers=headers,
+                    timeout=self.timeout,
+                    proxies=proxies,
+                )
 
-        if resp.status_code != 200:
-            raise RuntimeError(f"HTTP {resp.status_code}: {resp.text[:200]}")
+                if resp.status_code != 200:
+                    last_error = RuntimeError(f"HTTP {resp.status_code}: {resp.text[:200]}")
+                    logger.warning(f"  AI 请求[{mode}]失败: {last_error}")
+                    continue
 
-        data = resp.json()
-        choices = data.get("choices", [])
-        if not choices:
-            raise RuntimeError(f"API 返回空 choices: {data}")
+                data = resp.json()
+                choices = data.get("choices", [])
+                if not choices:
+                    last_error = RuntimeError(f"API 返回空 choices: {data}")
+                    logger.warning(f"  AI 请求[{mode}]返回空 choices")
+                    continue
 
-        content = choices[0].get("message", {}).get("content", "")
-        if not content:
-            raise RuntimeError(f"API 返回空内容: {data}")
+                content = choices[0].get("message", {}).get("content", "")
+                if not content:
+                    last_error = RuntimeError(f"API 返回空内容: {data}")
+                    logger.warning(f"  AI 请求[{mode}]返回空内容")
+                    continue
 
-        return content
+                return content
+
+            except Exception as e:
+                last_error = e
+                logger.warning(f"  AI 请求[{mode}]异常: {type(e).__name__}: {str(e)[:120]}")
+                continue
+
+        raise last_error or RuntimeError("AI 请求失败")
 
     # ──────────────────────────────────────────────
     #  批量分类 (串行，并发版由 worker 实现)

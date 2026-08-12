@@ -429,6 +429,20 @@ def main():
     import uvicorn
     import webbrowser
     import threading
+    import logging
+
+    # 日志落盘: data/logs/webapp.log（同时保留控制台输出）
+    log_dir = PROJECT_ROOT / "data" / "logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(name)s - %(message)s",
+        handlers=[
+            logging.FileHandler(log_dir / "webapp.log", encoding="utf-8"),
+            logging.StreamHandler(),
+        ],
+        force=True,
+    )
 
     host = config.get("web.host", "127.0.0.1")
     port = int(config.get("web.port", 8989))

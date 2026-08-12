@@ -134,6 +134,7 @@ async function startProcess() {
   $("progressDetail").textContent = "正在启动...";
   renderStages("parse", 0);
   State.running = true;
+  $("cancelBtn").hidden = false;
 
   // 连接 SSE
   if (State.sse) State.sse.close();
@@ -163,6 +164,7 @@ async function startProcess() {
   } catch (err) {
     addLog("error", `❌ ${err.message}`);
     State.running = false;
+    $("cancelBtn").hidden = true;
   }
 }
 
@@ -191,21 +193,34 @@ function handleEvent(ev) {
       refreshResults().then(() => {
         updateProgress(100, "全部完成");
         State.running = false;
+        $("cancelBtn").hidden = true;
         if (State.sse) State.sse.close();
       });
       break;
     case "cancelled":
       State.running = false;
+      $("cancelBtn").hidden = true;
       if (State.sse) State.sse.close();
       break;
     case "error":
       addLog("error", `❌ ${ev.message}`);
       updateProgress(0, "处理失败");
       State.running = false;
+      $("cancelBtn").hidden = true;
       if (State.sse) State.sse.close();
       break;
   }
 }
+
+// ─────────── 取消处理 ───────────
+$("cancelBtn").addEventListener("click", async () => {
+  try {
+    await api("/api/cancel", { method: "POST" });
+    addLog("warn", "⏹ 已请求取消，正在停止...");
+  } catch (err) {
+    addLog("error", `❌ 取消失败: ${err.message}`);
+  }
+});
 
 function pctFor(stage, current, total) {
   const ranges = { fetch: [30, 70], ai: [72, 95] };

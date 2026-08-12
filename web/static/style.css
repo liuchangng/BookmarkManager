@@ -378,6 +378,7 @@ body {
   border-color: #FECACA;
   color: var(--red-600);
 }
+.btn-sm { padding: 6px 12px; font-size: 13px; }
 .btn-danger:hover { background: #FEE2E2; border-color: #F87171; color: var(--red-600); }
 
 .btn-row { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }

@@ -8,6 +8,7 @@ fetcher.py - 网页抓取模块
 import re
 import json
 import time
+import threading
 import logging
 import hashlib
 from pathlib import Path
@@ -349,6 +350,8 @@ class WebFetcher:
         # 统计
         self._stats = {"total": 0, "success": 0, "failed": 0, "cached": 0,
                        "scrapling": 0, "requests": 0, "firecrawl": 0}
+        # 并行安全锁（保护 stats / cache 共享状态）
+        self._lock = threading.Lock()
 
         # 检查 Scrapling 可用性
         self._scrapling_available = self._check_scrapling()
@@ -373,13 +376,14 @@ class WebFetcher:
     # ──────────────────────────────────────────────
 
     def fetch(self, url: str) -> FetchResult:
-        """抓取单个 URL，返回 FetchResult"""
-        self._stats["total"] += 1
-
-        # 1. 缓存查询
-        cached = self.cache.get(url)
+        """抓取单个 URL，返回 FetchResult（线程安全，可并行调用）"""
+        with self._lock:
+            self._stats["total"] += 1
+            # 1. 缓存查询
+            cached = self.cache.get(url)
         if cached:
-            self._stats["cached"] += 1
+            with self._lock:
+                self._stats["cached"] += 1
             result = FetchResult(url, success=cached.get("success", False))
             result.__dict__.update(cached)
             return result
@@ -388,15 +392,19 @@ class WebFetcher:
         if self._should_skip(url):
             result = FetchResult(url, success=False)
             result.error = "跳过: 非HTML内容或已知不可抓取域名"
+            with self._lock:
+                self._stats["failed"] += 1
             return result
 
         # 3. 尝试抓取
         result = self._try_fetch(url)
 
-        # 4. 缓存结果
-        self.cache.set(url, result)
-        if len(self._stats) % 20 == 0:
-            self.cache.save()
+        # 4. 缓存结果（写盘串行化，避免并行写竞争）
+        with self._lock:
+            self.cache.set(url, result)
+            # 每 20 条落盘一次（按计数而非字典长度——len(dict) 恒为键数，永远不等于 0）
+            if self._stats["total"] % 20 == 0:
+                self.cache.save()
 
         return result
 
@@ -658,7 +666,7 @@ class WebFetcher:
     def fetch_many(self, urls: list[str], progress_cb: Optional[Callable] = None) -> list[FetchResult]:
         """
         批量抓取（串行，带进度回调）
-        并发版本在 fetch_worker.py 中实现
+        大量 URL 请用 fetch_many_parallel
         """
         results: list[FetchResult] = []
         total = len(urls)
@@ -673,6 +681,41 @@ class WebFetcher:
             # 每 50 条保存一次缓存
             if (i + 1) % 50 == 0:
                 self.cache.save()
+
+        self.cache.save()
+        return results
+
+    def fetch_many_parallel(self, urls: list[str], progress_cb: Optional[Callable] = None,
+                            max_workers: Optional[int] = None) -> list[FetchResult]:
+        """
+        批量并行抓取（ThreadPoolExecutor，线程安全）。
+        进度回调在调用线程串行触发（done_count, total, result）。
+        """
+        import concurrent.futures
+        workers = max_workers or self.concurrency or 5
+        total = len(urls)
+        results: list[FetchResult] = []
+        done = 0
+        results_lock = threading.Lock()
+
+        with concurrent.futures.ThreadPoolExecutor(
+                max_workers=workers, thread_name_prefix="fetch") as executor:
+            future_map = {executor.submit(self.fetch, u): u for u in urls}
+            for fut in concurrent.futures.as_completed(future_map):
+                url = future_map[fut]
+                try:
+                    result = fut.result()
+                except Exception as e:
+                    result = FetchResult(url, success=False)
+                    result.error = f"抓取异常: {type(e).__name__}: {str(e)[:80]}"
+                with results_lock:
+                    results.append(result)
+                    done += 1
+                if progress_cb:
+                    try:
+                        progress_cb(done, total, result)
+                    except Exception:
+                        pass
 
         self.cache.save()
         return results

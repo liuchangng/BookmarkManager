@@ -321,35 +321,32 @@ class Pipeline:
                 unique.append(u)
 
         total = len(unique)
-        self._log("INFO", f"准备抓取 {total} 个 URL...")
+        self._log("INFO", f"准备并行抓取 {total} 个 URL (并发 {self.fetcher.concurrency})...")
         self._progress(STAGE_FETCH, 30, f"抓取中... 0/{total}")
         self.fetcher.reset_stats()
 
         success = failed = 0
-        results: dict = {}
-        for i, url in enumerate(unique):
-            if self._cancelled:
-                self._log("WARN", "⚠️ 抓取已取消")
-                break
-            result = self.fetcher.fetch(url)
-            results[url] = result
+
+        def _on_item(done_count: int, total_count: int, result) -> None:
+            nonlocal success, failed
             if result.success:
                 success += 1
             else:
                 failed += 1
-
-            if (i + 1) % 10 == 0 or i == total - 1:
-                pct = min(int((i + 1) / total * 40) + 30, 70)
-                self._progress(STAGE_FETCH, pct,
-                               f"抓取: {i+1}/{total} | ✅{success} ❌{failed}")
+            pct = min(int(done_count / total_count * 40) + 30, 70)
+            self._progress(STAGE_FETCH, pct,
+                           f"抓取: {done_count}/{total_count} | ✅{success} ❌{failed}")
             self._emit({
                 "type": "item",
                 "stage": STAGE_FETCH,
-                "current": i + 1,
-                "total": total,
-                "url": url,
+                "current": done_count,
+                "total": total_count,
+                "url": result.url,
                 "success": result.success,
             })
+
+        result_list = self.fetcher.fetch_many_parallel(unique, progress_cb=_on_item)
+        results = {r.url: r for r in result_list}
 
         self.fetch_results.update(results)
         self.fetcher.save_cache()

@@ -48,10 +48,24 @@ _next_sub_id = 0
 
 
 def _broadcast(event: dict):
-    """把流水线事件广播给所有 SSE 订阅者"""
+    """把流水线事件广播给所有 SSE 订阅者。
+    慢消费者（队列满）时：瞬时事件（进度/日志/item）直接丢弃，
+    重要事件（done/error/cancelled/snapshot）最多等 5 秒，避免阻塞流水线线程。
+    """
+    etype = event.get("type")
+    important = etype in ("done", "error", "cancelled", "snapshot", "bookmarks_updated")
     with _sub_lock:
         for q in list(_subscribers.values()):
-            q.put(event)
+            if important:
+                try:
+                    q.put(event, timeout=5)
+                except queue.Full:
+                    pass
+            else:
+                try:
+                    q.put_nowait(event)
+                except queue.Full:
+                    pass
 
 
 pipeline.set_event_callback(_broadcast)

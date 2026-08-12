@@ -191,6 +191,43 @@ def test_status_text_module():
     assert status_text(mk("ok"), fetched=True) == "✅正常·已抓"
 
 
+def test_fetch_many_parallel():
+    """fetch_many_parallel: 结果完整、进度回调次数正确、真正并行加速"""
+    import time
+    from modules.fetcher import WebFetcher, FetchResult
+
+    with tempfile.TemporaryDirectory() as d:
+        fetcher = WebFetcher(
+            config={
+                "fetch": {"timeout": 5, "concurrency": 6, "max_retries": 0},
+                "classification": {"cache_dir": d},
+            },
+            proxy_adapter=None,
+        )
+
+        def fake_fetch(url):
+            time.sleep(0.15)
+            r = FetchResult(url, success=True)
+            r.title = f"title-{url}"
+            return r
+
+        fetcher.fetch = fake_fetch
+        urls = [f"https://x{i}.com/" for i in range(30)]
+
+        done_list = []
+        t0 = time.time()
+        results = fetcher.fetch_many_parallel(
+            urls, progress_cb=lambda n, t, r: done_list.append((n, t, r.url))
+        )
+        elapsed = time.time() - t0
+
+        assert len(results) == 30, "结果数量不完整"
+        assert len(done_list) == 30, "进度回调次数不足"
+        assert done_list[-1][0] == 30 and done_list[-1][1] == 30
+        # 30 × 0.15s 串行需 4.5s；6 并发应 < 2s
+        assert elapsed < 2.0, f"并行未生效: {elapsed:.2f}s"
+
+
 # ──────────────────────────────────────────────
 #  内置 runner（无 pytest 时可直接运行）
 # ──────────────────────────────────────────────

@@ -1,22 +1,68 @@
-# ── Python ──
+# ═══════════════════════════════════════════════════════════
+#  BookmarkManager .gitignore
+#  只保留：项目源码 + 相关文档
+#  其余全部忽略（运行时数据 / 配置 / 密钥 / 缓存 / 打包产物）
+# ═══════════════════════════════════════════════════════════
+
+# ── 🔑 密钥与敏感信息（最高优先级保护）──
+# 配置文件可能含代理账号密码 / AI 地址等，不入库（缺失时自动按默认值重建）
+config.yaml
+config.local.yaml
+config.*.yaml
+# 环境变量 / 密钥文件
+.env
+.env.*
+*.env
+*.key
+*.pem
+*.p12
+*.pfx
+*.jks
+.secrets/
+.secure/
+secure_store.bin
+*.secure
+credentials*
+secrets.yaml
+
+# ── 🐍 Python ──
 __pycache__/
 *.py[cod]
 *.egg-info/
 .venv/
 venv/
+.python-venv/
 
-# ── 测试缓存 ──
+# ── 🧪 测试缓存 ──
 .pytest_cache/
+.coverage
+htmlcov/
 
-# ── 运行时数据（缓存/导出/日志/备份，自动创建）──
+# ── 📦 运行时数据（上传/导出/缓存/日志/备份，自动创建）──
 data/
+uploads/
+exports/
+backups/
+logs/
+*.log
 
-# ── 打包产物 ──
+# ── 📦 打包产物 ──
 dist/
 build/
 *.zip
+*.spec
+# 打包排除规则说明文件（构建辅助，非源码/文档）
+zip_exclude.txt
 
-# ── Freebuff / spec-superflow 工作流脚手架（不入库）──
+# ── 🖥️ 开发工具 ──
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ── 🧊 Freebuff / spec-superflow 工作流脚手架（不入库）──
 .freebuff/
 .githooks/
 flow-kit/
@@ -29,7 +75,3 @@ plugin.json
 ADR.md
 CONTEXT-glossary.md
 LESSONS.md
-
-# ── IDE ──
-.idea/
-.vscode/

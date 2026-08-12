@@ -50,7 +50,7 @@
 ## 🖼️ 示例图
 
 <p align="center">
-  <img src="upload/app.png" alt="BookmarkManager 界面预览" width="640">
+  <img src="upload/example.png" alt="BookmarkManager 界面预览" width="100%">
 </p>
 
 ---

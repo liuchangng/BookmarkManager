@@ -20,6 +20,15 @@
 
 ## 🚀 快速开始
 
+### 一键启动（推荐）
+
+**Windows**：双击 `start.bat`（或命令行运行 `start.bat`）
+**Linux / macOS**：运行 `./start.sh`
+
+脚本自动完成：**uv sync（安装/更新依赖）→ 启动 webapp → 打开浏览器**。若服务已在运行则直接打开浏览器，不会重复启动。
+
+> 注：`start.bat` 为纯 ASCII（英文提示），避免中文编码在控制台解析出错；界面中文由应用自身提供。`start.sh` 为 UTF-8。
+
 ### 源码运行
 
 ```bash
@@ -72,6 +81,7 @@ uv run python webapp.py
 ```
 BookmarkManager/
 ├── webapp.py                   # Web 入口 (FastAPI + SSE + 静态服务)
+├── start.bat / start.sh        # 一键启动（uv sync + 启动 + 开浏览器）
 ├── config.yaml                 # 配置（代理/AI/抓取/导出/Web）
 ├── pyproject.toml / uv.lock    # 依赖 (uv)
 ├── design.md / tasks.md / execution-contract.md   # 设计文档

@@ -254,3 +254,28 @@ class Bookmark:
 | 缓存 | CACHE_VERSION 2→3 + AI_CACHE_VERSION 2→3（旧规则/AI 标签作废） |
 | UI | 设置页移除规则组、分类预览改「AI 自动生成」；审核/Excel 空配置时从已有书签推导分类选项；classifier 跳过 local/dead 系统桶 |
 | 代价（已知） | 每条书签都消耗 AI（约 ¥0.01-0.04，`max_cost_yuan` 预算兜底）；跨批次分类命名一致性依赖 prompt 约束，不如固定体系稳定（方案 C 自动学习为后续可选演进） |
+
+---
+
+## §14 Web 化重构（CHANGE-2026-08-12-web-refactor，已实施）
+
+**背景**：用户反馈 PyQt6 桌面界面难看、操作步骤多，要求重构为 Web 界面，核心链路不变（上传 HTML → 解析 → 抓取 → AI 分类 → 生成标准书签），简化操作、页面展示进度与结果。
+
+**决策（用户拍板）**：① 删除桌面版（main.py/ui/打包脚本全部移除，仓库只留 Web）；② 新增 FastAPI + uvicorn 依赖；③ 审核环节只对「未分类 + 本地/内网」开放；④ 页面增加代理配置（抓取国外资源 / AI API 走代理）；⑤ 前端用原生 JS 单页（零构建工具链）；⑥ 端口固定 127.0.0.1:8989。
+
+| 维度 | 决策 |
+|---|---|
+| 架构 | FastAPI 后端 + 单页前端（原生 JS，无 Node/Vue 构建链） |
+| 流程编排 | `modules/pipeline.py` 纯 Python Pipeline 类（事件回调替代 Qt 信号），桌面 worker（QThread）全部删除 |
+| 进度 | SSE 单向流推送（阶段/百分比/日志/完成），前端 `EventSource` 消费，快照+心跳保活 |
+| 并发 | 单任务互斥：同一时间只允许一个处理任务；取消可中断；页面刷新后 SSE 快照恢复状态 |
+| 前端布局 | 单页纵向流：① 上传区（拖拽）→ ② 进度区（阶段芯片+进度条+日志）→ ③ 结果区（分布树+表格+审核）→ 导出；上传成功后自动开始处理 |
+| 审核 | 内嵌结果页：改分类（prompt 输入）/ 删除单条 / 一键删失效；筛选（全部/待分类/本地/失效）；后端索引约定 = 活跃（未删除）书签索引 |
+| 设置 | 页面内设置对话框：代理（启用/地址/端口/用户名/AI 走代理 + 测试连通性）、AI（Key 只回显尾 4 位/Base URL/模型/预算上限 + 测试） |
+| 导出 | `POST /api/export` 生成 Netscape HTML（include_dead/include_local 默认来自 config），下载路径返回浏览器直接下载；导出后附浏览器导入指引 |
+| 安全 | API Key 复用 SecureStore 加密存储，网页不回显完整 Key；上传文件落 data/uploads，导出落 data/exports |
+| 遗留 | config.yaml 的 `ui` 段（theme/window_*）为桌面遗留，保留不删（无害）；docs/ 下 PHASE* 为桌面开发史，保留作历史 |
+
+**架构优势（重构可行性）**：核心引擎（解析/体检/分类/抓取/摘要/AI/HTML生成/缓存/配置）全部纯 Python 零 Qt 依赖，只有 3 个 worker 用 QThread（薄封装）——UI 层是唯一 Qt 专属部分。重构 = 换壳，引擎 100% 复用，57 项既有测试原样通过。
+
+**关键实现经验**：见 memory-store（SSE 测试挂死 / build_and_save 空导出 500 / test_connection 真实网络 / modules/__init__ 曾拉 PyQt6）。

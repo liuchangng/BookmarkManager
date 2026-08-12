@@ -77,3 +77,13 @@
 - [x] 暗色主题 styles_dark.qss 镜像：#60A5FA→#818CF8、#3B82F6→#6366F1、#1E3A5F→#312E81/#3730A3（hover 底），主按钮渐变 #4F46E5→#4338CA，进度条 #6366F1→#818CF8→#A78BFA
 - [x] 对比度修复：hintText 浅色 #94A3B8→#475569（2.56→6.96）、暗色 #64748B→#94A3B8（3.07→6.96），全部 WCAG 4.5+
 - [x] 验证：QSS 双主题解析零警告、MainWindow offscreen 构建 OK、旧色值残留扫描无、pytest 57 passed、六组关键对比度全部达标
+
+### CHANGE-2026-08-12-web-refactor（PyQt6 → Web 版重构，已完成 ✅）
+- [x] 依赖：pyproject 移除 PyQt6，新增 fastapi/uvicorn；config.yaml 新增 web 段（host/port=8989/auto_open_browser）
+- [x] T1 `modules/pipeline.py`：纯 Python 流水线编排（解析→体检→规则缓存→抓取→摘要→AI），事件回调替代 Qt 信号，线程安全，进度 0-100 映射
+- [x] T2 `webapp.py`：FastAPI 路由——上传解析 / 启动流水线 / SSE 事件流（快照+心跳）/ 书签查询与审核 / 导出+下载 / 设置（代理+AI+导出默认，Key 只回显尾 4 位）/ 代理·AI 连通性测试；单任务互斥 + 取消
+- [x] T3 前端 `web/static/`：单页纵向流（上传拖拽 → SSE 实时进度+日志 → 结果：分布树+表格+审核 → 导出+浏览器导入指引），原生 JS 零构建；上传后自动开始处理；Indigo 设计系统
+- [x] T4 桌面清理：删除 main.py / ui/ / build.py / build.spec / make_icon.py / version_info.txt / 三个 Qt worker（fetch/classify/ai_worker）/ exporter / importer / excel_writer；modules/__init__ 同步瘦身；全仓零 Qt 引用
+- [x] T5 测试：新增 test_pipeline.py（8 项：解析去重/离线全流程/审核操作/分布/筛选/状态文案）+ test_web.py（13 项：TestClient 上传/处理/SSE 快照与广播/审核/导出/设置，隔离 temp 配置与 secure store）；迁移 _apply_filter/_status_text 到 pipeline 模块级；全量 pytest 78 passed
+- [x] 实机冒烟：uvicorn 起服 → GET / + 静态资源 200 → 上传 2 条 → 处理 → 状态全 local → 导出 kept=2
+- [x] 文档：README v2.0 重写（Web 架构/3 步流程/新项目结构/78 项测试/更新日志），STATE/progress/memory 同步

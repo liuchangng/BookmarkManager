@@ -123,27 +123,26 @@ def test_config_defaults_match_builder():
 
 def test_dead_filter_logic():
     """T5.2: 「失效链接」筛选只返回 status==dead 的书签"""
-    from ui.main_window import MainWindow
+    from modules.pipeline import apply_filter
 
-    stub = type("Stub", (), {"fetch_results": {}})()
-    filtered = MainWindow._apply_filter(stub, SAMPLE, "失效链接")
+    filtered = apply_filter(SAMPLE, "失效链接", fetch_results={})
     assert [b.url for b in filtered] == ["https://dead.example.com"]
 
     # 其他筛选不受影响
-    assert len(MainWindow._apply_filter(stub, SAMPLE, "全部")) == 4
-    assert MainWindow._apply_filter(stub, SAMPLE, "已删除") == []
+    assert len(apply_filter(SAMPLE, "全部")) == 4
+    assert apply_filter(SAMPLE, "已删除") == []
 
 
 def test_status_column_text():
     """T5.1: 状态列文案（探活三态 + 抓取标记 + pending 兜底）"""
-    from ui.main_window import _status_text
+    from modules.pipeline import status_text
 
-    assert _status_text(_mk("https://a.com", "", "ok")) == "✅正常"
-    assert _status_text(_mk("https://a.com", "", "dead")) == "⚠️失效"
-    assert _status_text(_mk("https://a.com", "", "local")) == "📁本地"
-    assert _status_text(_mk("https://a.com", "", "pending")) == "🕐待定"
+    assert status_text(_mk("https://a.com", "", "ok")) == "✅正常"
+    assert status_text(_mk("https://a.com", "", "dead")) == "⚠️失效"
+    assert status_text(_mk("https://a.com", "", "local")) == "📁本地"
+    assert status_text(_mk("https://a.com", "", "pending")) == "🕐待定"
     # 抓取标记
-    assert _status_text(_mk("https://a.com", "", "ok"), fetched=True) == "✅正常·已抓"
+    assert status_text(_mk("https://a.com", "", "ok"), fetched=True) == "✅正常·已抓"
 
 
 # ──────────────────────────────────────────────

@@ -89,6 +89,11 @@ class ConfigManager:
             "export_include_dead": False,
             "export_include_local": True,
         },
+        "web": {
+            "host": "127.0.0.1",
+            "port": 8989,
+            "auto_open_browser": True,
+        },
         "ui": {
             "theme": "light",
             "language": "zh_CN",

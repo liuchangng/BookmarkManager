@@ -59,6 +59,10 @@ output:
   # T5.3 导出包含选项默认值（导出对话框可临时勾选）
   export_include_dead: false    # 失效链接默认排除
   export_include_local: true    # 本地/内网默认包含
+web:
+  host: 127.0.0.1
+  port: 8989
+  auto_open_browser: true
 ui:
   theme: light
   language: zh_CN

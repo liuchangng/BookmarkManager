@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🔖 收藏夹管理工具</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<!-- ═══════ 顶部导航 ═══════ -->
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-icon">🔖</span>
+    <span class="brand-name">收藏夹管理工具</span>
+    <span class="brand-badge">Web</span>
+  </div>
+  <nav class="topnav">
+    <button class="nav-btn" id="navSettingsBtn">⚙️ 设置</button>
+    <button class="nav-btn" id="navHelpBtn">❓ 帮助</button>
+  </nav>
+</header>
+
+<main class="container">
+
+  <!-- ═══════ ① 上传区 ═══════ -->
+  <section class="card upload-card" id="uploadCard">
+    <div class="card-header">
+      <h2 class="card-title">① 上传书签文件</h2>
+      <span class="card-hint">支持浏览器导出的 HTML / Chrome JSON 书签文件</span>
+    </div>
+    <div class="dropzone" id="dropzone">
+      <div class="dz-icon">📂</div>
+      <div class="dz-text">
+        <p class="dz-main">拖拽文件到此处，或 <span class="dz-link">点击选择文件</span></p>
+        <p class="dz-sub">bookmarks.html / Bookmarks (JSON) / *.htm</p>
+      </div>
+      <input type="file" id="fileInput" accept=".html,.htm,.json" hidden>
+    </div>
+    <div class="upload-status" id="uploadStatus" hidden></div>
+  </section>
+
+  <!-- ═══════ ② 进度区 ═══════ -->
+  <section class="card progress-card" id="progressCard" hidden>
+    <div class="card-header">
+      <h2 class="card-title">② 处理进度</h2>
+      <div class="stage-list" id="stageList"></div>
+    </div>
+    <div class="progress-track">
+      <div class="progress-bar" id="progressBar"><span id="progressText">0%</span></div>
+    </div>
+    <div class="progress-detail" id="progressDetail">准备中...</div>
+    <div class="log-box" id="logBox"></div>
+  </section>
+
+  <!-- ═══════ ③ 结果区 ═══════ -->
+  <section class="card result-card" id="resultCard" hidden>
+    <div class="card-header result-header">
+      <div>
+        <h2 class="card-title">③ 分类结果</h2>
+        <div class="stat-row" id="statRow"></div>
+      </div>
+      <div class="result-actions">
+        <select id="filterSelect" class="select">
+          <option value="all">全部书签</option>
+          <option value="unclassified">待分类/未分类</option>
+          <option value="local">📁 本地/内网</option>
+          <option value="dead">⚠️ 失效链接</option>
+        </select>
+        <button class="btn btn-danger" id="deleteDeadBtn" title="删除所有失效链接">🗑️ 删除失效</button>
+        <button class="btn btn-primary" id="exportBtn">⬇️ 导出标准 HTML</button>
+      </div>
+    </div>
+
+    <div class="result-grid">
+      <!-- 分类分布树 -->
+      <aside class="dist-panel">
+        <h3 class="panel-title">分类分布</h3>
+        <div id="distTree" class="dist-tree"></div>
+      </aside>
+
+      <!-- 书签表格 -->
+      <div class="table-panel">
+        <div class="table-wrap">
+          <table class="bookmark-table" id="bookmarkTable">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>标题</th>
+                <th>域名</th>
+                <th>一级分类</th>
+                <th>二级分类</th>
+                <th>状态</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="bookmarkTbody"></tbody>
+          </table>
+        </div>
+        <div class="table-footer">
+          <span id="tableCount" class="muted">共 0 条</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════ 导出结果 ═══════ -->
+  <section class="card export-card" id="exportCard" hidden>
+    <div class="card-header">
+      <h2 class="card-title">✅ 导出完成</h2>
+    </div>
+    <div class="export-body">
+      <p id="exportStats" class="muted"></p>
+      <div class="btn-row">
+        <a class="btn btn-primary" id="downloadBtn" download>⬇️ 下载分类后书签</a>
+        <button class="btn btn-secondary" id="reprocessBtn">🔄 重新处理</button>
+      </div>
+      <details class="import-guide">
+        <summary>📥 如何导入浏览器？</summary>
+        <ol>
+          <li>打开 Chrome/Edge 浏览器</li>
+          <li>进入书签管理器（Chrome: chrome://bookmarks / Edge: edge://favorites）</li>
+          <li>点击 ⋮ → 「导入书签」→ 选择刚下载的 HTML 文件</li>
+          <li>导入后书签出现在「导入的书签」文件夹中</li>
+        </ol>
+      </details>
+    </div>
+  </section>
+
+</main>
+
+<!-- ═══════ 设置对话框 ═══════ -->
+<div class="modal-overlay" id="settingsModal" hidden>
+  <div class="modal">
+    <div class="modal-header">
+      <h2>⚙️ 设置</h2>
+      <button class="modal-close" id="settingsClose">✕</button>
+    </div>
+    <div class="modal-body">
+      <h3>🌐 代理（访问国外资源需要）</h3>
+      <div class="form-row">
+        <label class="toggle">
+          <input type="checkbox" id="proxyEnabled">
+          <span class="toggle-slider"></span>
+          <span class="toggle-label">启用代理</span>
+        </label>
+      </div>
+      <div class="form-grid" id="proxyDetail">
+        <div class="form-field">
+          <label>代理地址</label>
+          <input type="text" id="proxyHost" placeholder="127.0.0.1">
+        </div>
+        <div class="form-field">
+          <label>端口</label>
+          <input type="number" id="proxyPort" placeholder="7890">
+        </div>
+        <div class="form-field">
+          <label>用户名（可选）</label>
+          <input type="text" id="proxyUsername" placeholder="留空表示无需认证">
+        </div>
+        <div class="form-field">
+          <label>AI 请求也走代理</label>
+          <label class="toggle small">
+            <input type="checkbox" id="proxyForAi">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" id="proxyTestBtn">🔌 测试代理</button>
+        <span id="proxyTestResult" class="test-result"></span>
+      </div>
+
+      <h3>🤖 AI 自动分类（DeepSeek）</h3>
+      <div class="form-field">
+        <label>API Key <span id="aiKeyTail" class="muted"></span></label>
+        <div class="input-group">
+          <input type="password" id="aiKey" placeholder="sk-...">
+          <button class="btn btn-secondary" id="aiTestBtn">🔑 测试</button>
+        </div>
+      </div>
+      <div class="form-grid">
+        <div class="form-field">
+          <label>API Base URL</label>
+          <input type="text" id="aiBaseUrl" placeholder="https://api.deepseek.com/v1">
+        </div>
+        <div class="form-field">
+          <label>模型</label>
+          <input type="text" id="aiModel" placeholder="deepseek-chat">
+        </div>
+        <div class="form-field">
+          <label>单次预算上限（¥）</label>
+          <input type="number" id="aiBudget" placeholder="5.0" step="0.5">
+        </div>
+      </div>
+      <p class="muted note">未配置 API Key 时跳过 AI 分类，可在结果页手动分类。</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" id="settingsSaveBtn">保存设置</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ 帮助对话框 ═══════ -->
+<div class="modal-overlay" id="helpModal" hidden>
+  <div class="modal">
+    <div class="modal-header">
+      <h2>❓ 使用说明</h2>
+      <button class="modal-close" id="helpClose">✕</button>
+    </div>
+    <div class="modal-body">
+      <ol class="help-list">
+        <li><b>① 上传书签文件</b> — 在浏览器中「导出书签」得到 bookmarks.html（或使用 Chrome 的 Bookmarks JSON 文件），拖入页面。</li>
+        <li><b>② 自动处理</b> — 系统自动完成：链接体检（区分本地/失效）→ 网页抓取 → AI 自动分类。</li>
+        <li><b>③ 审核结果</b> — 切换筛选「待分类」逐条确认分类，本地/内网书签可一并核对，失效链接一键删除。</li>
+        <li><b>④ 导出</b> — 下载标准 Netscape HTML，再到浏览器「导入书签」即可。</li>
+      </ol>
+      <p class="muted">💡 访问国外网站资料需要代理时，请先在 ⚙️ 设置 中启用并填写代理地址。</p>
+    </div>
+  </div>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

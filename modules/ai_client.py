@@ -333,9 +333,9 @@ def parse_ai_response(response_text: str, categories: list[dict]) -> tuple[str, 
 #  主客户端
 # ──────────────────────────────────────────────
 
-class DeepSeekClient:
+class OpenAIClient:
     """
-    DeepSeek API 客户端
+    OpenAI 兼容 API 客户端
 
     功能:
     - 单条/批量分类
@@ -679,7 +679,7 @@ def quick_classify(url: str, title: str, api_key: str, categories: list[dict],
         "summary": extract_summary(page) if page else "",
     }
 
-    client = DeepSeekClient(config=cfg, categories=categories, api_key=api_key)
+    client = OpenAIClient(config=cfg, categories=categories, api_key=api_key)
     return client.classify_one(info)
 
 

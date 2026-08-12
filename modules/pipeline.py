@@ -20,7 +20,7 @@ from modules.parser import BookmarkParser
 from modules.classifier import Classifier
 from modules.cache import ClassifyCache
 from modules.fetcher import WebFetcher, ProxyAdapter
-from modules.ai_client import DeepSeekClient
+from modules.ai_client import OpenAIClient
 from modules.summarizer import summarize_bookmarks
 from modules.link_probe import LinkProbeCache, probe_urls
 from modules.bookmark import Bookmark
@@ -129,7 +129,7 @@ class Pipeline:
             },
             "firecrawl": self.config.get("firecrawl", {}),
             "fetch": self.config.get("fetch", {}),
-            # 关键: DeepSeekClient 从 config["ai"] 读 base_url/model，
+            # 关键: OpenAIClient 从 config["ai"] 读 base_url/model，
             # 缺了会回退到默认 deepseek.com，导致用 agnes 的 Key 请求 401
             "ai": self.config.get("ai", {}),
             "classification": {"cache_dir": self.config.get("classification.cache_dir", "data/cache")},
@@ -417,7 +417,7 @@ class Pipeline:
             return
 
         cfg = self._build_fetcher_config()
-        client = DeepSeekClient(
+        client = OpenAIClient(
             config=cfg,
             categories=self.config.get("categories", []),
             proxy_adapter=ProxyAdapter(proxy_manager=self.proxy_manager, config=cfg),

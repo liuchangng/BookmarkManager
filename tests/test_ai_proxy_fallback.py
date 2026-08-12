@@ -20,7 +20,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from modules.ai_client import DeepSeekClient
+from modules.ai_client import OpenAIClient
 
 CFG = {
     "ai": {
@@ -59,7 +59,7 @@ def _http_error_response(status: int = 500):
 
 
 def _make_client(proxy=None):
-    client = DeepSeekClient(config=CFG, categories=[], proxy_adapter=proxy, api_key="test-key")
+    client = OpenAIClient(config=CFG, categories=[], proxy_adapter=proxy, api_key="test-key")
     client.cache = MagicMock()          # 关闭真实缓存
     client.cache.get.return_value = None
     return client
@@ -192,7 +192,7 @@ def test_api_key_param_wins_over_config():
                "timeout": 5, "max_retries": 1, "max_cost_yuan": 10.0, "api_key": ""},
         "classification": {"cache_dir": "data/cache"},
     }
-    client = DeepSeekClient(config=cfg, categories=[], proxy_adapter=None,
+    client = OpenAIClient(config=cfg, categories=[], proxy_adapter=None,
                             api_key="explicit-key-from-store")
     assert client.api_key == "explicit-key-from-store"
 

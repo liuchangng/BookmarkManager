@@ -6,7 +6,7 @@
 🎉 Phase 1 + 2 + 3 + 4 + 5 全部测试通过！
    断言总数: 190+ 个
 
-✅ DeepSeekClient  - AI 分类核心 (重试/缓存/成本/代理)
+✅ OpenAIClient   - AI 分类核心 (重试/缓存/成本/代理)
 ✅ AICache         - AI 结果缓存 (持久化/URL归一化/统计)
 ✅ AIWorker        - 后台分类线程 (进度/取消/预算警告)
 ✅ ExcelWriter     - 审核表生成 (颜色编码/下拉验证/筛选/3个Sheet)

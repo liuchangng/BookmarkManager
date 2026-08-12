@@ -159,10 +159,13 @@ def test_rule_match_includes_page_summary():
     assert bms[0].classify_method == "summary_rule"
 
 
-def test_loads_toggle_from_real_config():
+def test_real_config_ai_mode_no_rules():
+    """方案 A: 真实配置无分类规则，二阶段规则退化为空操作（摘要仍喂给 AI）"""
     clf = Classifier(str(PROJECT_ROOT / "config.yaml"))
-    assert clf.summary_rule_enabled is True
-    assert clf.rule_confidence_threshold == 0.8
+    assert clf.get_all_rules() == []
+    assert clf.summary_rule_enabled is True   # 默认值（配置中已无该键）
+    bm = _mk("某容器教程站", "https://example.com/x", summary="docker 容器化部署实践教程")
+    assert not clf.classify_with_summary(bm)  # 无规则 → 永不落地，全部交 AI
 
 
 # ──────────────────────────────────────────────

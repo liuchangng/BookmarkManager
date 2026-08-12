@@ -35,6 +35,8 @@ class ClassifyWorker(QThread):
         try:
             total = len(self.bookmarks)
             self.progress.emit(f"开始分类 {total} 条书签...")
+            if not self.classifier.rules:
+                self.progress.emit("⚠️ 无分类规则：启用 AI 自动分类模式，全部书签将交给 AI")
             self.progress_detail.emit(f"📊 总计: {total} | 规则分类中...")
 
             # Step 1: 尝试从缓存填充

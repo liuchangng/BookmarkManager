@@ -158,41 +158,27 @@ def _mk(url, title="", folder=""):
                     domain=BookmarkParser._extract_domain(url))
 
 
-def test_classifier_loads_sub_keywords():
+def test_classifier_loads_no_rules_in_ai_mode():
+    """方案 A: 真实配置 categories 已清空 → 0 规则（分类全程交给 AI）"""
     clf = Classifier(str(CONFIG_PATH))
-    rules = clf.get_all_rules()
-    sub_rules = [r for r in rules if r["description"].startswith("sub:")]
-    assert sub_rules, "config.yaml 应包含 sub_keywords 生成的小类规则"
-    # 小类关键词规则优先级低于大类域名规则、高于大类关键词规则（数值越小越先匹配）
-    github = [r for r in sub_rules if r["pattern"] == "github"]
-    assert github and github[0]["l2"] == "代码托管"
+    assert clf.get_all_rules() == []
 
 
-def test_classify_domain_and_subdomain():
+def test_classify_all_unmatched_in_ai_mode():
+    """方案 A: 无规则 → 所有书签落入「其他/待分类」，等待 AI 生成标签"""
     clf = Classifier(str(CONFIG_PATH))
     bms = clf.classify([
         _mk("https://github.com/"),
-        _mk("https://gist.github.com/"),   # 子域名 → 主域规则命中
+        _mk("https://gist.github.com/"),
         _mk("https://www.taobao.com/"),
-    ])
-    by_url = {b.url: b for b in bms}
-    assert by_url["https://github.com/"].category_l1 == "开发技术"
-    assert by_url["https://github.com/"].category_l2 == "代码托管"
-    assert by_url["https://gist.github.com/"].category_l1 == "开发技术"
-    assert by_url["https://www.taobao.com/"].category_l1 == "购物消费"
-    assert by_url["https://www.taobao.com/"].category_l2 == "综合电商"
-
-
-def test_classify_keyword_to_subcategory():
-    """小类关键词应把书签分到更精确的二级小类"""
-    clf = Classifier(str(CONFIG_PATH))
-    bms = clf.classify([
         _mk("https://www.mozilla.org/", title="MDN Web Docs"),
         _mk("https://www.youtube.com/", title="YouTube"),
+        _mk("https://www.ikea.com/cn/zh/", title="宜家中国"),
     ])
-    by_url = {b.url: b for b in bms}
-    assert by_url["https://www.mozilla.org/"].category_l2 == "文档教程"
-    assert by_url["https://www.youtube.com/"].category_l2 == "在线视频"
+    for b in bms:
+        assert b.category_l1 == "其他"
+        assert b.category_l2 == "待分类"
+        assert b.classify_method == "unmatched"
 
 
 def test_classify_unmatched_falls_to_other():
@@ -203,36 +189,10 @@ def test_classify_unmatched_falls_to_other():
     assert bms[0].classify_method == "unmatched"
 
 
-def test_new_categories_reference_and_home():
-    """T4: DMOZ 补类——参考工具 / 居家生活 及 sub_keywords 命中"""
+def test_category_list_empty_in_ai_mode():
+    """方案 A: 无固定分类配置 → get_category_list 为空（分类由 AI 生成）"""
     clf = Classifier(str(CONFIG_PATH))
-    bms = clf.classify([
-        _mk("https://dict.com/", "在线词典"),
-        _mk("https://www.ikea.com/cn/zh/", "宜家中国"),
-        _mk("https://www.weather.com.cn/", "中国天气网"),
-        _mk("https://www.xiachufang.com/", "下厨房"),
-    ])
-    by_url = {b.url: b for b in bms}
-
-    assert by_url["https://dict.com/"].category_l1 == "参考工具"
-    assert by_url["https://dict.com/"].category_l2 == "字典/翻译"
-
-    assert by_url["https://www.ikea.com/cn/zh/"].category_l1 == "居家生活"
-    assert by_url["https://www.ikea.com/cn/zh/"].category_l2 == "装修/家居"
-
-    assert by_url["https://www.weather.com.cn/"].category_l1 == "参考工具"
-    assert by_url["https://www.weather.com.cn/"].category_l2 == "天气/日历"
-
-    assert by_url["https://www.xiachufang.com/"].category_l1 == "居家生活"
-    assert by_url["https://www.xiachufang.com/"].category_l2 == "食谱/美食"
-
-
-def test_category_list_contains_new_categories():
-    """T4: get_category_list 输出包含新类"""
-    clf = Classifier(str(CONFIG_PATH))
-    l1s = {c["l1"] for c in clf.get_category_list()}
-    assert "参考工具" in l1s
-    assert "居家生活" in l1s
+    assert clf.get_category_list() == []
 
 
 def test_explicit_rules_override_categories():

@@ -12,6 +12,12 @@
 - Bookmark.page_summary 字段已存在但从未写入，设计激活它。
 - 待用户确认：失效/本地书签导出默认排除？DMOZ 补类（居家/参考工具/体育）是否首期？→ 已定（design.md §12）：失效默认排除、本地默认导出、首期补「参考工具」「居家生活」两类。
 
+## L2 跨会话关键决策（2026-08-12 方案 A）
+- **方案 A（已选）**：移除分类配置（categories 清空 + 删除 rule/classify_rules 键），分类全程由 AI 自动生成。T2 二阶段规则的「命中免 AI」不再生效（无规则可命中），但**摘要提取保留**并继续喂给 AI（省 token）。
+- AI 自由生成 prompt 铁律：一致性命名（同主题同名，禁同义反复）+ 禁 emoji（parse 侧用正则二次清洗 `[\U0001F300-\U0001FAFF\u2600-\u27BF]`）+ 空值兜底（l1→📁 其他, l2→未分类）。
+- 系统桶（本地/失效）是状态判定不是分类配置，永远保留；`Classifier.classify` 已加固跳过 local/dead（防规则阶段覆盖，即使误传也安全）。
+- 缓存版本：改分类语义必须同时 bump CACHE_VERSION + AI_CACHE_VERSION（旧规则标签作废），否则 cache.fill_bookmarks 会把旧标签灌回。
+
 ## L3 踩坑
 - 配置关键词禁用单字母（如 "x" 会命中任意 URL），短词如 "line" 会误伤 "online"，需谨慎。
 - 测试内联 runner 在 Windows GBK 控制台不能 print emoji，需 ASCII。
@@ -23,3 +29,4 @@
 - **T3 AI 摘要化**：AI 输入从 500 字原文 → ≤300 字页面摘要（省 token）；输出 JSON 增加 summary 字段回写 Bookmark.page_summary；AIResult 需加 summary 字段并进 to_dict（AIWorker 经 to_dict 下发，漏了就丢）。缓存版本 AI_CACHE_VERSION 1→2。
 - **T4 分类体系扩充**：新增「参考工具」「居家生活」两类（14 大类，310+ 规则）。⚠️ 跨类关键词冲突由 priority 决定（数值小者先匹配）——`xiachufang` 原本在生活健康/美食外卖（priority 92），新类居家生活/食谱美食 priority 132，若两处都留则新类不可达；**同词只能留一处**，已把 xiachufang 移入新类。⚠️ 手改 YAML 时 sub_keywords 各条目必须单独成行（`sub_keywords:` 与首个条目同行或两条目同行为非法 YAML，ScannerError）。
 - **T5 UI**：状态列文案抽为模块级 `_status_text(bm, fetched)` 便于单测（映射 ok→✅正常/dead→⚠️失效/local→📁本地/其他→🕐待定，抓取加 ·已抓）。导出过滤在 `BookmarkHTMLBuilder.build()` 内做（`include_dead=False/include_local=True`），先于 user_deleted 过滤之后；stats 新增 excluded_dead/excluded_local。⚠️ 测试 helper `_mk` 默认 status="ok"——测 pending 兜底时必须显式传 `"pending"`。
+- **方案 A 落地**：config_manager.DEFAULT_CONFIG 与 config.yaml 必须同步改（`_deep_merge` 以 override 为准，只改一处会导致旧 categories 残留）；settings_dialog.save 里删掉了 rule 键写入，否则会复活死配置；`Classifier.classify` 直接调用会覆盖 local/dead（真实流水线靠 classify_worker 过滤），已加 status 跳过加固——测试/脚本直接调 classify 也安全。

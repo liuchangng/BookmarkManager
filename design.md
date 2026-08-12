@@ -238,3 +238,19 @@ class Bookmark:
 | 2 | 本地/内网是否参与导出 | **默认导出**，归入独立「📁 本地/内网」文件夹；同样受导出复选框控制（默认含、失效不含） | 内网系统/本地文件常是用户要保留的，与死链性质不同 |
 | 3 | 摘要二阶段规则开关 | `classification.summary_rule_enabled: true`（默认开）；命中标记 `classify_method=summary_rule`；置信度沿用 keyword 规则 0.7，低于 `rule_confidence_threshold` 不落地；缓存版本号升级重建 | 可随时关闭，回退安全 |
 | 4 | DMOZ 补类是否首期 | 首期加入 **2 个**：「📖 参考工具」（字典/翻译/换算/天气/计算器）、「🏠 居家生活」（装修/家居/食谱/宠物）；⚽ 体育等其余**二期按需** | 参考工具类书签多且常落「其他」；体育与视频/新闻边界模糊 |
+
+---
+
+## 13. 追加决策（2026-08-12 · CHANGE-2026-08-12-ai-auto）
+
+> 用户选定**方案 A（最小改动）：去掉分类配置文件、全程自动化、AI 生成**。
+> 本节**推翻/取代** §5-B3 与 §12-3/4 的规则驱动部分（T2 二阶段规则退化为空操作，T4 补类移除）。
+
+| 决策 | 内容 |
+|---|---|
+| 分类配置 | `config.yaml` `categories: []`，删除 `classify_rules` 与 `rule_enabled / rule_confidence_threshold / summary_rule_enabled`；DEFAULT_CONFIG 同步 |
+| AI 标签空间 | **自由生成**：prompt 要求两级标签一致性命名、禁 emoji；`parse_ai_response` 空分类时直接采用（去 emoji、空值兜底 l1→📁 其他 / l2→未分类） |
+| 流水线 | 规则阶段 0 规则退化为空操作；全部书签 → 抓取摘要（T2 摘要提取保留，喂 AI 省 token）→ AI 分类 |
+| 缓存 | CACHE_VERSION 2→3 + AI_CACHE_VERSION 2→3（旧规则/AI 标签作废） |
+| UI | 设置页移除规则组、分类预览改「AI 自动生成」；审核/Excel 空配置时从已有书签推导分类选项；classifier 跳过 local/dead 系统桶 |
+| 代价（已知） | 每条书签都消耗 AI（约 ¥0.01-0.04，`max_cost_yuan` 预算兜底）；跨批次分类命名一致性依赖 prompt 约束，不如固定体系稳定（方案 C 自动学习为后续可选演进） |

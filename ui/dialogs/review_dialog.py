@@ -39,6 +39,21 @@ class ReviewDialog(QDialog):
         for c in categories:
             self.l2_map[c.get("name", "")] = c.get("sub_categories", [])
 
+        # 方案 A: 无固定分类配置时，从已有书签的实际分类推导（AI 生成标签）
+        if not self.l1_list:
+            seen = []
+            for bm in self.bookmarks:
+                l1 = (bm.category_l1 or "").strip()
+                if l1 and l1 not in seen:
+                    seen.append(l1)
+            self.l1_list = sorted(seen)
+            for l1 in self.l1_list:
+                l2s = sorted({(bm.category_l2 or "").strip() for bm in self.bookmarks
+                              if (bm.category_l1 or "").strip() == l1
+                              and (bm.category_l2 or "").strip()})
+                if l2s:
+                    self.l2_map[l1] = l2s
+
         self.setWindowTitle("📋 书签审核确认")
         self.setMinimumSize(1000, 600)
         self.resize(1200, 700)

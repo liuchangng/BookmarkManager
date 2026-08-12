@@ -55,6 +55,42 @@ def test_prompt_falls_back_to_text_when_no_summary():
 
 
 # ──────────────────────────────────────────────
+#  方案 A: 无固定分类配置（AI 自由生成）
+# ──────────────────────────────────────────────
+
+def test_freeform_prompt_when_no_categories():
+    """方案 A: 空 categories → 提示 AI 自动生成两级分类（无约束清单）"""
+    info = {"title": "测试页", "url": "https://example.com/x", "domain": "example.com",
+            "description": "", "keywords": [], "summary": "Docker 容器化部署教程"}
+    system, user = build_classify_prompt(info, [])
+    assert "自动为书签生成两级分类" in system
+    assert "可选分类体系" not in user
+    assert "分类由你自动生成" in user
+    assert "页面摘要: Docker 容器化部署教程" in user
+
+
+def test_parse_freeform_ai_labels_accepted():
+    """方案 A: 空分类时 AI 生成标签直接采用（去 emoji、空值兜底）"""
+    resp = ('{"l1": "开发技术", "l2": "容器编排", "confidence": 0.82, '
+            '"reason": "docker教程", "summary": "x"}')
+    l1, l2, conf, reason = parse_ai_response(resp, [])
+    assert l1 == "开发技术"
+    assert l2 == "容器编排"
+    assert conf == 0.82
+    assert reason == "docker教程"
+
+    # 带 emoji 的标签被清洗
+    l1e, l2e, _, _ = parse_ai_response('{"l1": "💻 开发技术", "l2": "🚀 部署工具", "confidence": 0.8}', [])
+    assert l1e == "开发技术"
+    assert l2e == "部署工具"
+
+    # 缺 l1/l2 → 其他/未分类 兜底
+    l1m, l2m, _, _ = parse_ai_response('{"l1": "", "l2": "", "confidence": 0.1}', [])
+    assert l1m == "📁 其他"
+    assert l2m == "未分类"
+
+
+# ──────────────────────────────────────────────
 #  T3.1 响应解析兼容
 # ──────────────────────────────────────────────
 

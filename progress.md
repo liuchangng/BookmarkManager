@@ -53,5 +53,14 @@
 - 端到端冒烟：prompt 含「页面摘要」且不含原文；AI 返回 summary → page_summary 回写成功；新类命中验证（dict→参考工具/字典翻译、ikea→居家生活/装修家居、weather→参考工具/天气日历、xiachufang→居家生活/食谱美食）
 - 无 git 仓库（`git status` fatal），无法按 R4 逐 task commit；改动均在工作区
 
+### CHANGE-2026-08-12-ai-auto（方案 A：全 AI 自动分类，已完成 ✅）
+- [x] 移除分类配置文件：config.yaml + DEFAULT_CONFIG `categories: []`，删除 classify_rules 与 rule_enabled/rule_confidence_threshold/summary_rule_enabled
+- [x] ai_client：`build_classify_prompt` 空配置分支（AI 自由生成两级分类，一致性命名/禁 emoji）；`parse_ai_response` 空分类直接采用 AI 标签（去 emoji、空值兜底）；AI_CACHE_VERSION 2→3
+- [x] cache.py：CACHE_VERSION 2→3（旧规则标签作废）；classify_worker 无规则提示「AI 自动分类模式」
+- [x] classifier.classify 加固：跳过 status local/dead（系统桶不被规则阶段覆盖）
+- [x] UI 适配：settings 移除规则组/AI 文案/分类预览空态；review_dialog/excel_writer 空分类时从已有书签推导分类选项；Excel L1 校验空选项跳过
+- [x] 测试改造：test_core 规则用例→方案 A 语义（0 规则/全 unmatched/空分类列表），test_summarizer 真实配置无规则，test_ai_prompt 新增自由 prompt/标签直通 2 项——57 项全绿
+- [x] 端到端冒烟：无规则 → 全部待分类 → AI 生成标签（💻 去 emoji）→ HTML 验证通过；系统桶保持
+
 ### 全部完成
 - T1 体检分流 → T2 摘要二阶段 → T3 AI 摘要化 → T4 分类扩充 → T5 UI → T6 回归收口，57 项测试全绿，README 与实现一致

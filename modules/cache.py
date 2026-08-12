@@ -16,7 +16,8 @@ logger = logging.getLogger("cache")
 
 # 缓存版本（修改分类逻辑时递增，触发全量刷新）
 # v2: 二阶段规则（T2）——关键词规则匹配文本增加 page_summary 维度
-CACHE_VERSION = "2"
+# v3: 方案 A——移除固定分类配置，旧规则标签作废，分类全部由 AI 生成
+CACHE_VERSION = "3"
 
 
 class ClassifyCache:

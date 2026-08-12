@@ -110,6 +110,21 @@ def generate_review_excel(
         subs = c.get("sub_categories", [])
         l2_map[l1] = subs if subs else ["未分类"]
 
+    # 方案 A: 无固定分类配置时，从已有书签的实际分类推导（AI 生成标签）
+    if not l1_options:
+        seen = []
+        for bm in bookmarks:
+            l1 = (bm.category_l1 or "").strip()
+            if l1 and l1 not in seen:
+                seen.append(l1)
+        l1_options = sorted(seen)
+        for l1 in l1_options:
+            l2s = sorted({(bm.category_l2 or "").strip() for bm in bookmarks
+                          if (bm.category_l1 or "").strip() == l1
+                          and (bm.category_l2 or "").strip()})
+            if l2s:
+                l2_map[l1] = l2s
+
     # 输出路径
     if not output_path:
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -158,10 +173,11 @@ def generate_review_excel(
     )
     ws.add_data_validation(delete_dv)
 
-    # 数据验证: L1 分类
-    l1_formula = '"' + ",".join(l1_options) + '"'
-    l1_dv = DataValidation(type="list", formula1=l1_formula, allow_blank=True)
-    ws.add_data_validation(l1_dv)
+    # 数据验证: L1 分类（无选项时跳过，避免空公式）
+    if l1_options:
+        l1_formula = '"' + ",".join(l1_options) + '"'
+        l1_dv = DataValidation(type="list", formula1=l1_formula, allow_blank=True)
+        ws.add_data_validation(l1_dv)
 
     # 填充数据
     row_idx = 2
@@ -272,6 +288,9 @@ def generate_review_excel(
         ws2.cell(row=1, column=c).alignment = HEADER_ALIGN
 
     r = 2
+    if not categories:
+        ws2.cell(row=r, column=1, value="分类由 AI 自动生成，无固定配置")
+        r += 1
     for cat in categories:
         name = cat.get("name", "")
         subs = cat.get("sub_categories", [])

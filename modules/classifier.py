@@ -221,6 +221,8 @@ class Classifier:
         for bm in bookmarks:
             if bm.user_deleted:
                 continue
+            if bm.status in ("local", "dead"):
+                continue  # T1 系统桶：本地/失效不参与规则分类
             matched = False
             for rule in self.rules:
                 if rule.match(bm):

@@ -1,4 +1,4 @@
 # STATE
 current_state: executing
-last_change: core-optimization-2026-08-11
-note: T1-T6 全部完成（57 项测试全绿，README 与实现一致）；change 收尾，待用户验收
+last_change: ai-auto-classify-2026-08-12
+note: 方案 A 落地（CHANGE-2026-08-12-ai-auto）：移除分类配置，全 AI 自动分类，57 项测试全绿；待用户验收

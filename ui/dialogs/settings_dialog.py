@@ -665,28 +665,11 @@ class ClassificationSettingsTab(QWidget):
         layout = QVBoxLayout(self)
         layout.setSpacing(12)
 
-        # 规则分类
-        rule_group = QGroupBox("规则分类")
-        rule_form = QFormLayout(rule_group)
-
-        self.rule_enabled_cb = QCheckBox("启用规则匹配")
-        self.rule_enabled_cb.setChecked(self.config.get("classification.rule_enabled", True))
-        rule_form.addRow("", self.rule_enabled_cb)
-
-        self.rule_threshold = QDoubleSpinBox()
-        self.rule_threshold.setRange(0.1, 1.0)
-        self.rule_threshold.setDecimals(1)
-        self.rule_threshold.setSingleStep(0.1)
-        self.rule_threshold.setValue(self.config.get("classification.rule_confidence_threshold", 0.8))
-        rule_form.addRow("置信度阈值:", self.rule_threshold)
-
-        layout.addWidget(rule_group)
-
-        # AI 分类
+        # AI 分类（方案 A：分类全程由 AI 生成，无规则阶段）
         ai_group = QGroupBox("AI 分类")
         ai_form = QFormLayout(ai_group)
 
-        self.ai_enabled_cb = QCheckBox("启用 AI 分类（规则未命中时使用）")
+        self.ai_enabled_cb = QCheckBox("启用 AI 自动分类")
         self.ai_enabled_cb.setChecked(self.config.get("classification.ai_enabled", True))
         ai_form.addRow("", self.ai_enabled_cb)
 
@@ -723,15 +706,18 @@ class ClassificationSettingsTab(QWidget):
 
         layout.addWidget(delete_group)
 
-        # 分类体系预览
-        cats_group = QGroupBox("分类体系（编辑 config.yaml 自定义）")
+        # 分类方式预览（方案 A：AI 自动生成，无需配置）
+        cats_group = QGroupBox("分类方式")
         cats_layout = QVBoxLayout(cats_group)
 
         categories = self.config.get_categories()
-        preview_text = "\n".join(
-            f"{cat['name']} → {', '.join(cat.get('sub_categories', []))}"
-            for cat in categories
-        )
+        if categories:
+            preview_text = "\n".join(
+                f"{cat['name']} → {', '.join(cat.get('sub_categories', []))}"
+                for cat in categories
+            )
+        else:
+            preview_text = "🤖 分类由 AI 自动生成\n无需配置分类/关键词，导入后全程自动化"
         self.cats_preview = QTextEdit()
         self.cats_preview.setPlainText(preview_text)
         self.cats_preview.setReadOnly(True)
@@ -746,8 +732,6 @@ class ClassificationSettingsTab(QWidget):
         return []
 
     def save(self):
-        self.config.set("classification.rule_enabled", self.rule_enabled_cb.isChecked())
-        self.config.set("classification.rule_confidence_threshold", self.rule_threshold.value())
         self.config.set("classification.ai_enabled", self.ai_enabled_cb.isChecked())
         self.config.set("classification.ai_confidence_threshold", self.ai_threshold.value())
         self.config.set("classification.cache_enabled", self.cache_enabled_cb.isChecked())
@@ -755,8 +739,6 @@ class ClassificationSettingsTab(QWidget):
         self.config.set("classification.confirm_delete", self.confirm_delete_cb.isChecked())
 
     def reload(self):
-        self.rule_enabled_cb.setChecked(self.config.get("classification.rule_enabled", True))
-        self.rule_threshold.setValue(self.config.get("classification.rule_confidence_threshold", 0.8))
         self.ai_enabled_cb.setChecked(self.config.get("classification.ai_enabled", True))
         self.ai_threshold.setValue(self.config.get("classification.ai_confidence_threshold", 0.5))
         self.cache_enabled_cb.setChecked(self.config.get("classification.cache_enabled", True))

@@ -26,7 +26,7 @@ DEFAULT_BASE_URL = "https://api.deepseek.com/v1"
 DEFAULT_MODEL = "deepseek-chat"
 MAX_PROMPT_CHARS = 2000  # 单次请求最大上下文（T3: AI 输入改为页面摘要，不再塞长正文）
 ESTIMATED_PRICE_PER_1K = 0.0014  # deepseek-chat 输入约 $0.0014/1K tokens (约 ¥0.01)
-AI_CACHE_VERSION = "2"  # v2: 摘要化 prompt + summary 字段（T3）
+AI_CACHE_VERSION = "3"  # v3: 方案 A——移除固定分类配置，AI 自由生成标签
 
 
 # ──────────────────────────────────────────────
@@ -142,23 +142,40 @@ def build_classify_prompt(bookmark_info: dict, categories: list[dict]) -> tuple[
     """
     构建分类 prompt (system + user)
     bookmark_info: {title, url, domain, description, keywords, text}
-    categories: config 中的 categories 列表
+    categories: config 中的 categories 列表；为空时 → 方案 A：AI 自由生成两级分类
     """
-    # System prompt
-    system = (
-        "你是一个专业的书签分类助手。\n"
-        "任务: 根据用户提供的网页信息，将其分类到给定的分类体系中。\n"
-        "要求:\n"
-        "1. 必须选择分类体系中最匹配的 一级分类 和 二级分类\n"
-        "2. 给出置信度 (0-1 之间的小数)\n"
-        "3. 给出简短分类理由 (≤20字)\n"
-        "4. 用一句话概括该网页内容作为 summary (≤50字)\n"
-        "5. 严格输出 JSON 格式，不要输出其他内容\n\n"
-        "输出格式示例:\n"
-        '{"l1": "💻 开发技术", "l2": "文档教程", "confidence": 0.85, "reason": "Python官方文档教程", "summary": "Python 标准库官方文档"}\n'
-    )
+    if not categories:
+        # ── 方案 A: 无固定分类配置，AI 自动生成标签（全程自动化）──
+        system = (
+            "你是一个专业的书签分类助手。\n"
+            "任务: 根据用户提供的网页信息，自动为书签生成两级分类。\n"
+            "要求:\n"
+            "1. 一级分类(l1): 2-6 字中文领域名（例如: 开发技术、购物消费、视频娱乐）\n"
+            "2. 二级分类(l2): 2-8 字贴切小类（例如: 代码托管、在线视频、优惠券/比价）\n"
+            "3. 相同主题的书签必须使用完全相同的分类名称，禁止同义反复，保持整体一致性\n"
+            "4. 分类名称不要带 emoji、符号或编号\n"
+            "5. 给出置信度 (0-1 之间的小数) 与简短理由 (≤20字)\n"
+            "6. 用一句话概括该网页内容作为 summary (≤50字)\n"
+            "7. 严格输出 JSON 格式，不要输出其他内容\n\n"
+            "输出格式示例:\n"
+            '{"l1": "开发技术", "l2": "文档教程", "confidence": 0.85, "reason": "Python官方文档", "summary": "Python 标准库官方文档"}\n'
+        )
+    else:
+        # ── 有固定分类体系：AI 从给定体系中选择（约束模式，保留兼容）──
+        system = (
+            "你是一个专业的书签分类助手。\n"
+            "任务: 根据用户提供的网页信息，将其分类到给定的分类体系中。\n"
+            "要求:\n"
+            "1. 必须选择分类体系中最匹配的 一级分类 和 二级分类\n"
+            "2. 给出置信度 (0-1 之间的小数)\n"
+            "3. 给出简短分类理由 (≤20字)\n"
+            "4. 用一句话概括该网页内容作为 summary (≤50字)\n"
+            "5. 严格输出 JSON 格式，不要输出其他内容\n\n"
+            "输出格式示例:\n"
+            '{"l1": "💻 开发技术", "l2": "文档教程", "confidence": 0.85, "reason": "Python官方文档教程", "summary": "Python 标准库官方文档"}\n'
+        )
 
-    # 构建分类体系描述
+    # 构建分类体系描述（仅约束模式）
     cat_desc = []
     for cat in categories:
         name = cat.get("name", "")
@@ -179,18 +196,31 @@ def build_classify_prompt(bookmark_info: dict, categories: list[dict]) -> tuple[
 
     kw_str = "、".join(keywords[:10]) if keywords else "无"
 
-    user = (
-        f"网页信息:\n"
-        f"  标题: {title}\n"
-        f"  URL: {url}\n"
-        f"  域名: {domain}\n"
-        f"  描述: {desc}\n"
-        f"  关键词: {kw_str}\n"
-        f"  页面摘要: {summary}\n\n"
-        f"可选分类体系:\n"
-        f"{cat_text}\n\n"
-        f'请直接输出 JSON: {{"l1": "...", "l2": "...", "confidence": 0.x, "reason": "...", "summary": "..."}}'
-    )
+    if not categories:
+        user = (
+            f"网页信息:\n"
+            f"  标题: {title}\n"
+            f"  URL: {url}\n"
+            f"  域名: {domain}\n"
+            f"  描述: {desc}\n"
+            f"  关键词: {kw_str}\n"
+            f"  页面摘要: {summary}\n\n"
+            f"分类由你自动生成（无需受限于固定清单），请保持与同类书签一致的命名。\n"
+            f'请直接输出 JSON: {{"l1": "...", "l2": "...", "confidence": 0.x, "reason": "...", "summary": "..."}}'
+        )
+    else:
+        user = (
+            f"网页信息:\n"
+            f"  标题: {title}\n"
+            f"  URL: {url}\n"
+            f"  域名: {domain}\n"
+            f"  描述: {desc}\n"
+            f"  关键词: {kw_str}\n"
+            f"  页面摘要: {summary}\n\n"
+            f"可选分类体系:\n"
+            f"{cat_text}\n\n"
+            f'请直接输出 JSON: {{"l1": "...", "l2": "...", "confidence": 0.x, "reason": "...", "summary": "..."}}'
+        )
 
     return system, user
 
@@ -261,27 +291,37 @@ def parse_ai_response(response_text: str, categories: list[dict]) -> tuple[str, 
     confidence = float(data.get("confidence", 0))
     reason = str(data.get("reason", "")).strip()[:50]
 
-    # 验证 l1 是否在分类体系中
-    valid_l1 = {c.get("name", "") for c in categories}
-    if l1 not in valid_l1:
-        # 尝试模糊匹配
-        for valid in valid_l1:
-            if valid in l1 or l1 in valid:
-                l1 = valid
-                break
-        else:
+    if not categories:
+        # ── 方案 A: 无固定分类配置，AI 标签直接采用（仅做基本清洗）──
+        import re
+        l1 = re.sub(r"[\U0001F300-\U0001FAFF\u2600-\u27BF]", "", l1).strip()[:20]
+        l2 = re.sub(r"[\U0001F300-\U0001FAFF\u2600-\u27BF]", "", l2).strip()[:20]
+        if not l1:
             l1 = "📁 其他"
+        if not l2:
+            l2 = "未分类"
+    else:
+        # 验证 l1 是否在分类体系中
+        valid_l1 = {c.get("name", "") for c in categories}
+        if l1 not in valid_l1:
+            # 尝试模糊匹配
+            for valid in valid_l1:
+                if valid in l1 or l1 in valid:
+                    l1 = valid
+                    break
+            else:
+                l1 = "📁 其他"
 
-    # 验证 l2 是否在该 l1 的子分类中
-    valid_l2 = set()
-    for c in categories:
-        if c.get("name", "") == l1:
-            valid_l2 = set(c.get("sub_categories", []))
-            break
+        # 验证 l2 是否在该 l1 的子分类中
+        valid_l2 = set()
+        for c in categories:
+            if c.get("name", "") == l1:
+                valid_l2 = set(c.get("sub_categories", []))
+                break
 
-    if l2 not in valid_l2:
-        # 取第一个子分类或留空
-        l2 = list(valid_l2)[0] if valid_l2 else "未分类"
+        if l2 not in valid_l2:
+            # 取第一个子分类或留空
+            l2 = list(valid_l2)[0] if valid_l2 else "未分类"
 
     # 置信度裁剪
     confidence = max(0.0, min(1.0, confidence))

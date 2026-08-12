@@ -360,7 +360,9 @@ class DeepSeekClient:
         self.concurrency = ai_cfg.get("concurrency", 3)
         self.batch_size = ai_cfg.get("batch_size", 5)
         self.max_cost_yuan = ai_cfg.get("max_cost_yuan", 5.0)
-        self.api_key = ai_cfg.get("api_key")
+        # 优先使用显式传入的 api_key（pipeline 从 SecureStore 读取后传入），
+        # 否则回退到 config（兼容旧调用方式）
+        self.api_key = api_key or ai_cfg.get("api_key")
 
         # 代理
         self.proxy = proxy_adapter

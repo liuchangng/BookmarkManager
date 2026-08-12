@@ -182,7 +182,35 @@ def test_all_fail_classifies_as_unclassified():
 
 
 # ──────────────────────────────────────────────
-#  6. 代理也可能失败 → 重试后仍归未分类（带代理场景）
+#  6. 显式传入的 api_key 必须生效（pipeline 从 SecureStore 读取后传入）
+# ──────────────────────────────────────────────
+
+def test_api_key_param_wins_over_config():
+    """回归: 构造函数曾忽略 api_key 参数，导致 pipeline 分类全部失败"""
+    cfg = {
+        "ai": {"base_url": "https://api.agnes-ai.cn/v1", "model": "agnes-2.5-flash",
+               "timeout": 5, "max_retries": 1, "max_cost_yuan": 10.0, "api_key": ""},
+        "classification": {"cache_dir": "data/cache"},
+    }
+    client = DeepSeekClient(config=cfg, categories=[], proxy_adapter=None,
+                            api_key="explicit-key-from-store")
+    assert client.api_key == "explicit-key-from-store"
+
+    # config 里没配 key、仅靠参数传入 → 也能请求成功
+    client.cache = MagicMock()
+    client.cache.get.return_value = None
+
+    def fake_post(url, **kwargs):
+        assert kwargs["headers"]["Authorization"] == "Bearer explicit-key-from-store"
+        return _ok_response()
+
+    with patch("modules.ai_client.requests.post", side_effect=fake_post):
+        content = client._call_api("sys", "user")
+    assert "开发技术" in content
+
+
+# ──────────────────────────────────────────────
+#  7. 代理也可能失败 → 重试后仍归未分类（带代理场景）
 # ──────────────────────────────────────────────
 
 def test_both_channels_fail_then_unclassified():

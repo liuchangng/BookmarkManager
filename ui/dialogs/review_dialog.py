@@ -122,6 +122,7 @@ class ReviewDialog(QDialog):
         batch_row.addWidget(QLabel("批量操作:"))
 
         self.batch_confirm_btn = QPushButton("✅ 全部确认可见项")
+        self.batch_confirm_btn.setObjectName("primaryBtn")
         self.batch_confirm_btn.clicked.connect(self._batch_confirm)
         batch_row.addWidget(self.batch_confirm_btn)
 
@@ -131,12 +132,14 @@ class ReviewDialog(QDialog):
         batch_row.addWidget(self.batch_l1_combo)
 
         self.batch_apply_btn = QPushButton("🏷️ 应用L1")
+        self.batch_apply_btn.setObjectName("secondaryBtn")
         self.batch_apply_btn.clicked.connect(self._batch_apply_l1)
         batch_row.addWidget(self.batch_apply_btn)
 
         batch_row.addStretch()
 
         self.export_excel_btn = QPushButton("📊 导出Excel")
+        self.export_excel_btn.setObjectName("secondaryBtn")
         self.export_excel_btn.clicked.connect(self._export_excel)
         batch_row.addWidget(self.export_excel_btn)
 
@@ -147,7 +150,9 @@ class ReviewDialog(QDialog):
             QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
         )
         btn_box.button(QDialogButtonBox.StandardButton.Ok).setText("✅ 确认完成")
+        btn_box.button(QDialogButtonBox.StandardButton.Ok).setObjectName("primaryBtn")
         btn_box.button(QDialogButtonBox.StandardButton.Cancel).setText("取消")
+        btn_box.button(QDialogButtonBox.StandardButton.Cancel).setObjectName("secondaryBtn")
         btn_box.accepted.connect(self._on_accept)
         btn_box.rejected.connect(self.reject)
         layout.addWidget(btn_box)

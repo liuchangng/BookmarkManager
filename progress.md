@@ -62,5 +62,12 @@
 - [x] 测试改造：test_core 规则用例→方案 A 语义（0 规则/全 unmatched/空分类列表），test_summarizer 真实配置无规则，test_ai_prompt 新增自由 prompt/标签直通 2 项——57 项全绿
 - [x] 端到端冒烟：无规则 → 全部待分类 → AI 生成标签（💻 去 emoji）→ HTML 验证通过；系统桶保持
 
+### CHANGE-2026-08-12-ui-polish（UI 样式美化与布局优化，已完成 ✅）
+- [x] 按钮体系统一：import_wizard open/copy → secondaryBtn；review_dialog 批量按钮 → primary/secondary + QDialogButtonBox OK/Cancel 分主次；settings test_key → secondaryBtn、show_key → iconBtn（新增 QSS）
+- [x] 按钮微交互：移除全局 pressed padding 跳动（浅/暗双主题），新增 QPushButton:focus 焦点环
+- [x] 四态补全（浅/暗同步）：secondary/danger/bigToggle/ComboBox/SpinBox/CheckBox/Radio/Tab/ToolButton 的 disabled；QScrollBar::corner
+- [x] 布局：import_hint → objectName hintText（QSS 统一），主窗口最小尺寸 900×600 → 1024×640
+- [x] 验证：QSS 双主题解析无警告、MainWindow+Settings/Review/ImportWizard 三对话框 offscreen 构建 OK、pytest 57 passed
+
 ### 全部完成
 - T1 体检分流 → T2 摘要二阶段 → T3 AI 摘要化 → T4 分类扩充 → T5 UI → T6 回归收口，57 项测试全绿，README 与实现一致

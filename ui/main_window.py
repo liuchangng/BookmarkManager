@@ -210,7 +210,7 @@ class MainWindow(QMainWindow):
         self.proxy_manager = proxy_manager
 
         self.setWindowTitle("🔖 收藏夹管理工具 v1.0")
-        self.setMinimumSize(900, 600)
+        self.setMinimumSize(1024, 640)
         w = config.get("ui.window_width", 1200)
         h = config.get("ui.window_height", 800)
         self.resize(w, h)
@@ -575,7 +575,7 @@ class MainWindow(QMainWindow):
         self.import_btn.clicked.connect(self._on_import_file)
         import_row.addWidget(self.import_btn)
         import_hint = QLabel("或选择已导出的书签文件 (HTML / JSON)，免去浏览器检测与关闭")
-        import_hint.setStyleSheet("color: #94A3B8; font-size: 11.5px;")
+        import_hint.setObjectName("hintText")
         import_row.addWidget(import_hint)
         import_row.addStretch()
         layout.addLayout(import_row)

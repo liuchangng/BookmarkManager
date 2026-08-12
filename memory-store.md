@@ -18,6 +18,12 @@
 - 系统桶（本地/失效）是状态判定不是分类配置，永远保留；`Classifier.classify` 已加固跳过 local/dead（防规则阶段覆盖，即使误传也安全）。
 - 缓存版本：改分类语义必须同时 bump CACHE_VERSION + AI_CACHE_VERSION（旧规则标签作废），否则 cache.fill_bookmarks 会把旧标签灌回。
 
+## L2 跨会话关键决策（2026-08-12 UI 美化）
+- **UI 纪律（R9 落地）**：QSS 是唯一样式来源，控件一律 objectName + QSS 四态（hover/pressed/focus/disabled），禁内联 setStyleSheet（`import_hint` 已 objectName 化，动态变色除外）。
+- **按钮语言**：主操作 primaryBtn / 次要 secondaryBtn / 危险 dangerBtn / 图标 iconBtn / 大开关 bigToggle；QDialogButtonBox 用 `.button(Ok).setObjectName("primaryBtn")` 区分主次。
+- **双主题必须同步**：styles.qss 与 styles_dark.qss 改任何规则都要镜像（暗色禁用态色板：bg #0F172A/#1E293B、fg #475569/#64748B、border #1E293B/#334155）。
+- **验证手法**：`QT_QPA_PLATFORM=offscreen` 构造 MainWindow+对话框即可捕获 QSS 解析警告与构造错误，无需真启动窗口。
+
 ## L3 踩坑
 - 配置关键词禁用单字母（如 "x" 会命中任意 URL），短词如 "line" 会误伤 "online"，需谨慎。
 - 测试内联 runner 在 Windows GBK 控制台不能 print emoji，需 ASCII。

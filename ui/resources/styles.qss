@@ -68,6 +68,10 @@ QToolBar QToolButton:pressed {
     color: #1D4ED8;
 }
 
+QToolBar QToolButton:disabled {
+    color: #CBD5E1;
+}
+
 /* ── 主窗口状态栏 ── */
 QStatusBar {
     background-color: #FFFFFF;
@@ -273,6 +277,12 @@ QPushButton#secondaryBtn:hover {
     color: #2563EB;
 }
 
+QPushButton#secondaryBtn:disabled {
+    background-color: #F8FAFC;
+    color: #94A3B8;
+    border-color: #E2E8F0;
+}
+
 /* ── 危险按钮 ── */
 QPushButton#dangerBtn {
     background-color: #FEF2F2;
@@ -284,6 +294,12 @@ QPushButton#dangerBtn {
 QPushButton#dangerBtn:hover {
     background-color: #FEE2E2;
     border-color: #F87171;
+}
+
+QPushButton#dangerBtn:disabled {
+    background-color: #F8FAFC;
+    color: #FCA5A5;
+    border-color: #FECACA;
 }
 
 /* ── 代理大开关 ── */
@@ -307,6 +323,12 @@ QPushButton#bigToggle[class="toggleOff"] {
     background-color: #F1F5F9;
     color: #94A3B8;
     border: 1px solid #CBD5E1;
+}
+
+QPushButton#bigToggle:disabled {
+    background-color: #F1F5F9;
+    color: #CBD5E1;
+    border: 1px solid #E2E8F0;
 }
 
 /* ── 代理状态标签 ── */
@@ -388,6 +410,12 @@ QLabel#previewCount {
     padding: 3px 10px;
     background-color: #F1F5F9;
     border-radius: 6px;
+}
+
+/* ── 操作提示文字（如导入提示） ── */
+QLabel#hintText {
+    color: #94A3B8;
+    font-size: 11.5px;
 }
 
 /* ── 字段标签 ── */
@@ -489,6 +517,12 @@ QLineEdit:hover, QTextEdit:hover, QPlainTextEdit:hover {
     border-color: #9CA3AF;
 }
 
+QLineEdit:disabled, QTextEdit:disabled, QPlainTextEdit:disabled {
+    background-color: #F8FAFC;
+    color: #9CA3AF;
+    border-color: #E5E7EB;
+}
+
 /* ── 下拉框 ── */
 QComboBox {
     padding: 5px 10px;
@@ -507,6 +541,12 @@ QComboBox:hover {
 
 QComboBox:focus, QComboBox:on {
     border-color: #3B82F6;
+}
+
+QComboBox:disabled {
+    background-color: #F8FAFC;
+    color: #9CA3AF;
+    border-color: #E5E7EB;
 }
 
 QComboBox::drop-down {
@@ -574,6 +614,11 @@ QCheckBox::indicator:checked:hover {
     background-color: #2563EB;
 }
 
+QCheckBox::indicator:disabled {
+    background-color: #F1F5F9;
+    border-color: #E2E8F0;
+}
+
 /* ── 单选框 ── */
 QRadioButton {
     spacing: 8px;
@@ -598,6 +643,11 @@ QRadioButton::indicator:checked {
     border-color: #3B82F6;
 }
 
+QRadioButton::indicator:disabled {
+    background-color: #F1F5F9;
+    border-color: #E2E8F0;
+}
+
 /* ── 数字输入 ── */
 QSpinBox, QDoubleSpinBox {
     border: 1.5px solid #D1D5DB;
@@ -611,6 +661,12 @@ QSpinBox, QDoubleSpinBox {
 
 QSpinBox:focus, QDoubleSpinBox:focus {
     border-color: #3B82F6;
+}
+
+QSpinBox:disabled, QDoubleSpinBox:disabled {
+    background-color: #F8FAFC;
+    color: #9CA3AF;
+    border-color: #E5E7EB;
 }
 
 /* ── 分组框 ── */
@@ -693,6 +749,10 @@ QTabBar::tab:hover:!selected {
     color: #2563EB;
 }
 
+QTabBar::tab:disabled {
+    color: #CBD5E1;
+}
+
 /* ── 标签通用 ── */
 QLabel {
     color: #374151;
@@ -741,6 +801,11 @@ QScrollBar::handle:horizontal:hover {
     background: #94A3B8;
 }
 
+QScrollBar::corner {
+    background: #F1F5F9;
+    border: none;
+}
+
 QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
     width: 0px;
 }
@@ -782,16 +847,44 @@ QPushButton#segmentMid {
     border-right: none;
 }
 
-/* ── 微交互：按钮点击波纹效果（通过边框） ── */
-QPushButton:pressed {
-    border-style: inset;
-    padding-top: 8px;
-    padding-bottom: 6px;
+/* ── 图标小按钮（如密码可见性切换） ── */
+QPushButton#iconBtn {
+    background-color: #F8FAFC;
+    border: 1px solid #CBD5E1;
+    border-radius: 8px;
+    color: #475569;
+    min-width: 30px;
+    min-height: 30px;
+    padding: 2px;
+    font-size: 13px;
 }
 
-QPushButton#primaryBtn:pressed {
-    padding-top: 10px;
-    padding-bottom: 8px;
+QPushButton#iconBtn:hover {
+    background-color: #EFF6FF;
+    border-color: #93C5FD;
+    color: #2563EB;
+}
+
+QPushButton#iconBtn:pressed {
+    background-color: #DBEAFE;
+}
+
+QPushButton#iconBtn:checked {
+    background-color: #DBEAFE;
+    border-color: #93C5FD;
+    color: #1D4ED8;
+}
+
+QPushButton#iconBtn:disabled {
+    background-color: #F8FAFC;
+    color: #CBD5E1;
+    border-color: #E2E8F0;
+}
+
+/* ── 微交互：按钮焦点环（键盘导航可见） ── */
+QPushButton:focus {
+    border-color: #3B82F6;
+    outline: none;
 }
 
 /* ── 分割器 ── */

@@ -406,12 +406,13 @@ class AISettingsTab(QWidget):
         key_row.addWidget(self.api_key_input)
 
         self.show_key_btn = QPushButton("👁")
-        self.show_key_btn.setMaximumWidth(36)
+        self.show_key_btn.setObjectName("iconBtn")
         self.show_key_btn.setCheckable(True)
         self.show_key_btn.toggled.connect(self._on_show_key)
         key_row.addWidget(self.show_key_btn)
 
         self.test_key_btn = QPushButton("🔑 测试")
+        self.test_key_btn.setObjectName("secondaryBtn")
         self.test_key_btn.clicked.connect(self._on_test_key)
         key_row.addWidget(self.test_key_btn)
 

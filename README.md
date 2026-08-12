@@ -238,6 +238,14 @@ uv run python build.py
 - ✅ **UI 适配**：设置页移除规则组、分类预览改「AI 自动生成」；审核/Excel 从已有书签推导分类选项；classifier 不再覆盖本地/失效系统桶
 - ✅ 测试 57 项全绿（规则用例改为方案 A 语义 + 新增自由模式用例）
 
+### v1.3 (UI 样式美化与布局优化)
+
+- ✅ **按钮体系统一**：导入向导/审核/设置对话框按钮统一 primary/secondary/icon 样式；密码可见性切换新增 `iconBtn`（hover/pressed/checked/disabled 四态）
+- ✅ **按钮微交互优化**：移除按压时 padding 跳动，新增焦点环（键盘导航可见）
+- ✅ **四态补全**：secondary/danger/bigToggle/下拉框/数字框/复选框/单选框/Tab/工具栏按钮的 disabled 状态（浅色+暗色主题同步）
+- ✅ **布局微调**：导入提示文字 objectName 化（`hintText`）、主窗口最小尺寸 900×600 → 1024×640
+- ✅ QSS 双主题解析通过、主窗口+三对话框 offscreen 构建验证、57 项测试全绿
+
 ### 计划中 (v1.1)
 
 - [ ] Firefox 支持

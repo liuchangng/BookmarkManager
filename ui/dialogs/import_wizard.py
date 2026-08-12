@@ -73,10 +73,12 @@ class ImportWizard(QDialog):
 
         btn_row = QHBoxLayout()
         open_btn = QPushButton("📂 打开所在文件夹")
+        open_btn.setObjectName("secondaryBtn")
         open_btn.clicked.connect(self._open_folder)
         btn_row.addWidget(open_btn)
 
         copy_btn = QPushButton("📋 复制路径")
+        copy_btn.setObjectName("secondaryBtn")
         copy_btn.clicked.connect(self._copy_path)
         btn_row.addWidget(copy_btn)
 

@@ -1,0 +1,28 @@
+# ZIP 打包排除规则
+# 用于创建交付 ZIP 时排除开发环境文件
+
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.git/
+.gitignore
+.idea/
+.vscode/
+*.swp
+*.swo
+build/
+dist/
+*.spec
+data/
+.secure/
+backups/
+logs/
+*.log
+test_*.html
+test_*.xlsx
+bookmark_*.html
+output.html
+*.egg-info/
+.venv/
+uv.lock

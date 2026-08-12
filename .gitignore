@@ -1,0 +1,35 @@
+# ── Python ──
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# ── 测试缓存 ──
+.pytest_cache/
+
+# ── 运行时数据（缓存/导出/日志/备份，自动创建）──
+data/
+
+# ── 打包产物 ──
+dist/
+build/
+*.zip
+
+# ── Freebuff / spec-superflow 工作流脚手架（不入库）──
+.freebuff/
+.githooks/
+flow-kit/
+scripts/
+spec-resources/
+knowledge.md
+METHODOLOGY.md
+README.spec-superflow.md
+plugin.json
+ADR.md
+CONTEXT-glossary.md
+LESSONS.md
+
+# ── IDE ──
+.idea/
+.vscode/

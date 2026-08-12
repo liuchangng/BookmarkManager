@@ -1,0 +1,55 @@
+[project]
+name = "bookmark-manager"
+version = "1.0.0"
+description = "浏览器收藏夹智能分类管理工具 — 自动导出、解析、分类、导出浏览器书签"
+authors = [
+    { name = "Bookmark Manager Team" },
+]
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+keywords = ["bookmark", "browser", "manager", "分类", "收藏夹"]
+
+dependencies = [
+    # ── 核心 GUI ──
+    "PyQt6>=6.6.0",
+    # ── 配置 & 数据 ──
+    "PyYAML>=6.0",
+    "openpyxl>=3.1.0",
+    # ── 网络请求 ──
+    "requests>=2.31.0",
+    "httpx>=0.27.0",
+    "urllib3>=2.2.0",
+    # ── 网页抓取 ──
+    "scrapling>=0.4.0",
+    "firecrawl-py>=1.0.0",
+    # ── AI (DeepSeek 兼容 OpenAI 协议) ──
+    "openai>=1.30.0",
+    # ── 加密存储 ──
+    "cryptography>=42.0.0",
+    # ── 进程检测 (浏览器锁定检查) ──
+    "psutil>=5.9.0",
+    # ── 重试 & 容错 ──
+    "tenacity>=8.2.0",
+    # ── 日志 ──
+    "loguru>=0.7.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+    "coverage>=7.0.0",
+    # 可选: 图标生成
+    "Pillow>=10.0.0",
+]
+build = [
+    "pyinstaller>=6.0.0",
+]
+
+[build-system]
+requires = ["setuptools>=75.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.uv]
+# uv 自身配置
+package = false                # 本项目为应用程序，非库包

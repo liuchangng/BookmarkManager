@@ -1,0 +1,831 @@
+/* ============================================================
+   全局样式表 - 收藏夹管理工具 v2.0
+   设计系统: 
+   - 字体: Inter/Segoe UI/YaHei 层次化
+   - 基础色: Slate/Blue 调色板
+   - 卡片: 白底微阴影 + 圆角
+   - 强调色: #3B82F6 (蓝), #10B981 (绿), #F59E0B (黄), #EF4444 (红)
+   ============================================================ */
+
+/* ── 全局基础 ── */
+QWidget {
+    font-family: "Segoe UI Variable Display", "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+    font-size: 12.5px;
+    color: #1E293B;
+    background-color: #F0F2F5;
+}
+
+QMainWindow {
+    background-color: #F0F2F5;
+}
+
+QToolTip {
+    background-color: #1E293B;
+    color: #F1F5F9;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 11px;
+}
+
+/* ── 分隔线 ── */
+QFrame#separator {
+    background-color: #E2E8F0;
+}
+
+/* ── 工具栏 - 圆角悬浮风格 ── */
+QToolBar {
+    background-color: #FFFFFF;
+    border-bottom: 1px solid #E2E8F0;
+    spacing: 4px;
+    padding: 6px 12px;
+    min-height: 36px;
+}
+
+QToolBar::separator {
+    width: 1px;
+    margin: 6px 6px;
+    background-color: #E2E8F0;
+}
+
+QToolBar QToolButton {
+    padding: 5px 10px;
+    border-radius: 6px;
+    border: none;
+    background-color: transparent;
+    color: #475569;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+QToolBar QToolButton:hover {
+    background-color: #EFF6FF;
+    color: #2563EB;
+}
+
+QToolBar QToolButton:pressed {
+    background-color: #DBEAFE;
+    color: #1D4ED8;
+}
+
+/* ── 主窗口状态栏 ── */
+QStatusBar {
+    background-color: #FFFFFF;
+    border-top: 1px solid #E2E8F0;
+    color: #64748B;
+    font-size: 11px;
+    padding: 2px 12px;
+    min-height: 22px;
+}
+
+QStatusBar::item {
+    border: none;
+}
+
+/* ── 卡片容器 ── */
+QFrame#actionCard,
+QFrame#progressCard,
+QFrame#previewCard,
+QFrame#logCard {
+    background-color: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    padding: 14px;
+}
+
+/* 卡片 hover 微效果 */
+QFrame#actionCard:hover,
+QFrame#progressCard:hover,
+QFrame#previewCard:hover,
+QFrame#logCard:hover {
+    border-color: #CBD5E1;
+}
+
+/* ── 步骤导航 ── */
+QFrame#stepNav {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+        stop:0 #FFFFFF, stop:1 #FAFBFC);
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    padding: 10px 16px;
+}
+
+/* ── 步骤标签 - 待处理 ── */
+QLabel#stepPending {
+    font-size: 12.5px;
+    font-weight: 500;
+    padding: 5px 12px;
+    border-radius: 8px;
+    background-color: #F1F5F9;
+    color: #94A3B8;
+    border: 1px solid transparent;
+}
+
+/* ── 步骤标签 - 执行中 ── */
+QLabel#stepCurrent {
+    font-size: 12.5px;
+    font-weight: 700;
+    padding: 5px 12px;
+    border-radius: 8px;
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+        stop:0 #DBEAFE, stop:1 #EFF6FF);
+    color: #1D4ED8;
+    border: 1.5px solid #93C5FD;
+}
+
+/* ── 步骤标签 - 已完成 ── */
+QLabel#stepDone {
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 5px 12px;
+    border-radius: 8px;
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+        stop:0 #DCFCE7, stop:1 #F0FDF4);
+    color: #16A34A;
+    border: 1px solid #86EFAC;
+}
+
+/* ── 步骤标签 - 出错 ── */
+QLabel#stepError {
+    font-size: 12.5px;
+    font-weight: 700;
+    padding: 5px 12px;
+    border-radius: 8px;
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+        stop:0 #FEE2E2, stop:1 #FEF2F2);
+    color: #DC2626;
+    border: 1.5px solid #F87171;
+}
+
+/* ── 步骤箭头 ── */
+QLabel#stepArrow {
+    color: #CBD5E1;
+    font-size: 13px;
+    font-weight: 300;
+    padding: 0 2px;
+}
+
+QLabel#navTitle {
+    color: #1E293B;
+    font-size: 13px;
+    font-weight: 700;
+    margin-right: 8px;
+}
+
+/* ── 配置警告栏 ── */
+QFrame#configWarning {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+        stop:0 #FEF2F2, stop:1 #FFFBEB);
+    border: 1.5px solid #FCA5A5;
+    border-radius: 10px;
+}
+
+QLabel#warningText {
+    font-size: 13px;
+    font-weight: 700;
+    color: #B91C1C;
+}
+
+QPushButton#warningDismiss {
+    background-color: transparent;
+    border: none;
+    color: #FCA5A5;
+    font-size: 15px;
+    font-weight: 700;
+    padding: 0;
+    min-width: 24px;
+    min-height: 24px;
+    border-radius: 12px;
+}
+
+QPushButton#warningDismiss:hover {
+    background-color: #FEE2E2;
+    color: #DC2626;
+}
+
+/* ── 按钮基础 ── */
+QPushButton {
+    padding: 7px 16px;
+    border-radius: 8px;
+    border: 1px solid #D1D5DB;
+    background-color: #FFFFFF;
+    color: #374151;
+    font-size: 12.5px;
+    font-weight: 500;
+    min-height: 28px;
+}
+
+QPushButton:hover {
+    background-color: #F3F4F6;
+    border-color: #9CA3AF;
+}
+
+QPushButton:pressed {
+    background-color: #E5E7EB;
+}
+
+QPushButton:disabled {
+    background-color: #F9FAFB;
+    color: #9CA3AF;
+    border-color: #E5E7EB;
+}
+
+/* ── 主操作按钮 - 渐变 + 阴影效果 ── */
+QPushButton#primaryBtn {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+        stop:0 #3B82F6, stop:1 #2563EB);
+    color: #FFFFFF;
+    border: none;
+    font-weight: 600;
+    padding: 9px 24px;
+    font-size: 13.5px;
+    letter-spacing: 0.5px;
+    border-radius: 10px;
+    min-height: 38px;
+}
+
+QPushButton#primaryBtn:hover {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+        stop:0 #2563EB, stop:1 #1D4ED8);
+}
+
+QPushButton#primaryBtn:pressed {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+        stop:0 #1D4ED8, stop:1 #1E40AF);
+}
+
+QPushButton#primaryBtn:disabled {
+    background: #94A3B8;
+    color: #E2E8F0;
+}
+
+/* ── 次要按钮 ── */
+QPushButton#secondaryBtn {
+    background-color: #F8FAFC;
+    border: 1px solid #CBD5E1;
+    color: #475569;
+    font-weight: 500;
+}
+
+QPushButton#secondaryBtn:hover {
+    background-color: #EFF6FF;
+    border-color: #93C5FD;
+    color: #2563EB;
+}
+
+/* ── 危险按钮 ── */
+QPushButton#dangerBtn {
+    background-color: #FEF2F2;
+    border: 1px solid #FECACA;
+    color: #DC2626;
+    font-weight: 500;
+}
+
+QPushButton#dangerBtn:hover {
+    background-color: #FEE2E2;
+    border-color: #F87171;
+}
+
+/* ── 代理大开关 ── */
+QPushButton#bigToggle {
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 28px;
+    min-width: 110px;
+    min-height: 36px;
+}
+
+QPushButton#bigToggle[class="toggleOn"] {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+        stop:0 #10B981, stop:1 #059669);
+    color: #FFFFFF;
+    border: none;
+}
+
+QPushButton#bigToggle[class="toggleOff"] {
+    background-color: #F1F5F9;
+    color: #94A3B8;
+    border: 1px solid #CBD5E1;
+}
+
+/* ── 代理状态标签 ── */
+QLabel#proxyStatus {
+    font-size: 12px;
+    font-weight: 500;
+    color: #475569;
+}
+
+QLabel#aiStatus {
+    font-size: 12px;
+    font-weight: 500;
+    color: #475569;
+}
+
+/* ── 进度条 ── */
+QProgressBar {
+    border: none;
+    border-radius: 8px;
+    background-color: #F1F5F9;
+    height: 22px;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: #475569;
+}
+
+QProgressBar::chunk {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+        stop:0 #3B82F6, stop:0.5 #6366F1, stop:1 #8B5CF6);
+    border-radius: 8px;
+}
+
+/* ── 进度详情 ── */
+QLabel#progressDetail {
+    font-size: 11.5px;
+    color: #64748B;
+    padding: 2px 0;
+}
+
+/* ── 卡片标题 ── */
+QLabel#cardTitle {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1E293B;
+}
+
+/* ── 统计仪表盘 ── */
+QFrame#statsDashboard {
+    background-color: transparent;
+    padding: 0;
+    margin: 0;
+}
+
+QFrame#statCard {
+    background-color: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
+    padding: 0;
+}
+
+QFrame#statCard:hover {
+    border-color: #CBD5E1;
+    background-color: #F1F5F9;
+}
+
+QFrame#chartFrame {
+    background-color: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
+    padding: 6px 12px;
+}
+
+/* ── 预览计数 ── */
+QLabel#previewCount {
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748B;
+    padding: 3px 10px;
+    background-color: #F1F5F9;
+    border-radius: 6px;
+}
+
+/* ── 字段标签 ── */
+QLabel#fieldLabel {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #374151;
+    padding: 0 4px;
+}
+
+/* ── 表格 ── */
+QTableWidget {
+    background-color: #FFFFFF;
+    alternate-background-color: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    gridline-color: #F1F5F9;
+    selection-background-color: #DBEAFE;
+    selection-color: #1E40AF;
+    font-size: 12px;
+}
+
+QTableWidget::item {
+    padding: 4px 8px;
+    border-bottom: 1px solid #F1F5F9;
+}
+
+QTableWidget::item:selected {
+    background-color: #DBEAFE;
+    color: #1E40AF;
+}
+
+/* 表头 */
+QHeaderView::section {
+    background-color: #F8FAFC;
+    color: #475569;
+    font-weight: 600;
+    font-size: 11.5px;
+    padding: 6px 8px;
+    border: none;
+    border-bottom: 2px solid #E2E8F0;
+    border-right: 1px solid #F1F5F9;
+}
+
+QHeaderView::section:hover {
+    background-color: #EFF6FF;
+    color: #2563EB;
+}
+
+/* ── 树形控件 ── */
+QTreeWidget {
+    background-color: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    font-size: 12px;
+    padding: 4px;
+}
+
+QTreeWidget::item {
+    padding: 3px 4px;
+    border-radius: 4px;
+}
+
+QTreeWidget::item:hover {
+    background-color: #F1F5F9;
+}
+
+/* ── 日志面板 ── */
+QTextEdit#logView,
+QTextEdit#logView QWidget {
+    background-color: #1E293B;
+    color: #E2E8F0;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    font-family: "Cascadia Code", "JetBrains Mono", "Consolas", monospace;
+    font-size: 11px;
+    padding: 8px;
+    selection-background-color: #475569;
+}
+
+/* ── 输入框 ── */
+QLineEdit, QTextEdit, QPlainTextEdit {
+    border: 1.5px solid #D1D5DB;
+    border-radius: 8px;
+    padding: 6px 10px;
+    background-color: #FFFFFF;
+    selection-background-color: #DBEAFE;
+    selection-color: #1E40AF;
+    color: #1E293B;
+    font-size: 12.5px;
+}
+
+QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus {
+    border-color: #3B82F6;
+    background-color: #FAFBFF;
+}
+
+QLineEdit:hover, QTextEdit:hover, QPlainTextEdit:hover {
+    border-color: #9CA3AF;
+}
+
+/* ── 下拉框 ── */
+QComboBox {
+    padding: 5px 10px;
+    min-width: 120px;
+    border: 1.5px solid #D1D5DB;
+    border-radius: 8px;
+    background-color: #FFFFFF;
+    color: #1E293B;
+    font-size: 12.5px;
+    min-height: 28px;
+}
+
+QComboBox:hover {
+    border-color: #9CA3AF;
+}
+
+QComboBox:focus, QComboBox:on {
+    border-color: #3B82F6;
+}
+
+QComboBox::drop-down {
+    border: none;
+    width: 24px;
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+}
+
+QComboBox::down-arrow {
+    width: 10px;
+    height: 6px;
+}
+
+QComboBox QAbstractItemView {
+    border: 1px solid #CBD5E1;
+    border-radius: 8px;
+    background-color: #FFFFFF;
+    padding: 4px;
+    selection-background-color: #DBEAFE;
+    selection-color: #1D4ED8;
+    outline: none;
+}
+
+QComboBox QAbstractItemView::item {
+    padding: 6px 10px;
+    border-radius: 4px;
+    min-height: 24px;
+}
+
+QComboBox QAbstractItemView::item:hover {
+    background-color: #F1F5F9;
+}
+
+/* ── 复选框 ── */
+QCheckBox {
+    spacing: 8px;
+    color: #374151;
+    font-size: 12.5px;
+}
+
+QCheckBox:hover {
+    color: #1E293B;
+}
+
+QCheckBox::indicator {
+    width: 18px;
+    height: 18px;
+    border: 1.5px solid #CBD5E1;
+    border-radius: 5px;
+    background-color: #FFFFFF;
+}
+
+QCheckBox::indicator:hover {
+    border-color: #3B82F6;
+    background-color: #EFF6FF;
+}
+
+QCheckBox::indicator:checked {
+    background-color: #3B82F6;
+    border-color: #3B82F6;
+}
+
+QCheckBox::indicator:checked:hover {
+    background-color: #2563EB;
+}
+
+/* ── 单选框 ── */
+QRadioButton {
+    spacing: 8px;
+    color: #374151;
+    font-size: 12.5px;
+}
+
+QRadioButton::indicator {
+    width: 18px;
+    height: 18px;
+    border: 1.5px solid #CBD5E1;
+    border-radius: 9px;
+    background-color: #FFFFFF;
+}
+
+QRadioButton::indicator:hover {
+    border-color: #3B82F6;
+}
+
+QRadioButton::indicator:checked {
+    background-color: #3B82F6;
+    border-color: #3B82F6;
+}
+
+/* ── 数字输入 ── */
+QSpinBox, QDoubleSpinBox {
+    border: 1.5px solid #D1D5DB;
+    border-radius: 8px;
+    padding: 4px 8px;
+    background-color: #FFFFFF;
+    min-width: 80px;
+    min-height: 28px;
+    font-size: 12.5px;
+}
+
+QSpinBox:focus, QDoubleSpinBox:focus {
+    border-color: #3B82F6;
+}
+
+/* ── 分组框 ── */
+QGroupBox {
+    font-weight: 600;
+    font-size: 12.5px;
+    color: #374151;
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
+    margin-top: 12px;
+    padding: 18px 14px 12px 14px;
+    background-color: #FAFBFC;
+}
+
+QGroupBox::title {
+    subcontrol-origin: margin;
+    left: 14px;
+    padding: 0 8px;
+    color: #3B82F6;
+    background-color: #FAFBFC;
+}
+
+/* Tab 内的分组框 */
+QTabWidget QGroupBox {
+    background-color: #F8FAFC;
+    border: 1px solid #E2E8F0;
+}
+
+QTabWidget QGroupBox::title {
+    background-color: #F8FAFC;
+}
+
+QTabWidget QGroupBox QLabel {
+    color: #475569;
+    font-weight: 500;
+}
+
+/* ── 对话框 ── */
+QDialog {
+    background-color: #F8FAFC;
+}
+
+QDialog QLabel {
+    color: #374151;
+}
+
+/* ── Tab 控件 ── */
+QTabWidget::pane {
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
+    background-color: #FFFFFF;
+    margin-top: 4px;
+    padding: 8px;
+}
+
+QTabBar::tab {
+    padding: 8px 18px;
+    margin-right: 2px;
+    border: 1px solid transparent;
+    border-bottom: none;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    background-color: transparent;
+    color: #64748B;
+    font-size: 12.5px;
+    font-weight: 500;
+    min-height: 28px;
+}
+
+QTabBar::tab:selected {
+    background-color: #FFFFFF;
+    color: #3B82F6;
+    font-weight: 600;
+    border: 1px solid #E2E8F0;
+    border-bottom: 2px solid #3B82F6;
+}
+
+QTabBar::tab:hover:!selected {
+    background-color: #F8FAFC;
+    color: #2563EB;
+}
+
+/* ── 标签通用 ── */
+QLabel {
+    color: #374151;
+}
+
+/* ── 滚动条 ── */
+QScrollBar:vertical {
+    width: 8px;
+    background: transparent;
+    border-radius: 4px;
+    margin: 2px;
+}
+
+QScrollBar::handle:vertical {
+    background: #CBD5E1;
+    border-radius: 4px;
+    min-height: 30px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: #94A3B8;
+}
+
+QScrollBar::handle:vertical:pressed {
+    background: #64748B;
+}
+
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    height: 0px;
+}
+
+QScrollBar:horizontal {
+    height: 8px;
+    background: transparent;
+    border-radius: 4px;
+    margin: 2px;
+}
+
+QScrollBar::handle:horizontal {
+    background: #CBD5E1;
+    border-radius: 4px;
+    min-width: 30px;
+}
+
+QScrollBar::handle:horizontal:hover {
+    background: #94A3B8;
+}
+
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+    width: 0px;
+}
+
+/* ── 消息框 ── */
+QMessageBox {
+    background-color: #FFFFFF;
+    border-radius: 12px;
+}
+
+QMessageBox QLabel {
+    font-size: 13px;
+    color: #1E293B;
+    min-width: 300px;
+}
+
+QMessageBox QPushButton {
+    min-width: 80px;
+    min-height: 32px;
+    padding: 6px 24px;
+    border-radius: 8px;
+    font-weight: 500;
+}
+
+/* ── 分段控件按钮组 ── */
+QPushButton#segmentLeft {
+    border-radius: 8px 0 0 8px;
+    border-right: none;
+}
+
+QPushButton#segmentRight {
+    border-radius: 0 8px 8px 0;
+    border-left: none;
+}
+
+QPushButton#segmentMid {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+}
+
+/* ── 微交互：按钮点击波纹效果（通过边框） ── */
+QPushButton:pressed {
+    border-style: inset;
+    padding-top: 8px;
+    padding-bottom: 6px;
+}
+
+QPushButton#primaryBtn:pressed {
+    padding-top: 10px;
+    padding-bottom: 8px;
+}
+
+/* ── 分割器 ── */
+QSplitter::handle {
+    background-color: #E2E8F0;
+    margin: 2px 0;
+    min-height: 4px;
+    border-radius: 2px;
+}
+
+QSplitter::handle:hover {
+    background-color: #93C5FD;
+    min-height: 6px;
+}
+
+/* ── 滚动区域 ── */
+QScrollArea {
+    border: none;
+    background-color: transparent;
+}
+
+/* ── 行编辑密码模式 ── */
+QLineEdit[echoMode="2"] {
+    font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+    letter-spacing: 2px;
+}
+
+/* ── 表格排序指示器 ── */
+QHeaderView::down-arrow {
+    image: none;
+    width: 0;
+}
+
+QHeaderView::up-arrow {
+    image: none;
+    width: 0;
+}

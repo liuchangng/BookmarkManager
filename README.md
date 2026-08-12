@@ -190,7 +190,7 @@ uv run python webapp.py
 ## 🔗 仓库地址
 
 - GitHub：<https://github.com/liuchangng/BookmarkManager>
-- Gitee：<http://gitee.com/liuchangng/BookmarkManager>
+- Gitee：<http://gitee.com/liuchangng/bookmark-manager>
 
 > 同步镜像仓库，任选其一获取源码、提交 Issue 或参与贡献。
 
